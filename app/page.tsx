@@ -197,10 +197,10 @@ function Sidebar({
 }) {
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 flex w-20 flex-col border-r border-white/10 bg-[#0b0f0d]/95 px-3 py-4 backdrop-blur-xl md:w-72 md:px-5">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-white/10 bg-[#0b0f0d]/95 px-5 py-4 backdrop-blur-xl md:flex">
       <div className="flex items-center border-b border-white/10 pb-5">
         <p className="hidden text-xl font-black tracking-normal text-white md:block">GymBuddy</p>
-        <p className="grid h-11 w-11 place-items-center rounded-lg bg-lime-400 text-lg font-black text-[#07100b] shadow-[0_0_30px_rgba(163,230,53,0.34)] md:hidden">
+        <p className="hidden h-11 w-11 place-items-center rounded-lg bg-lime-400 text-lg font-black text-[#07100b] shadow-[0_0_30px_rgba(163,230,53,0.34)]">
           G
         </p>
       </div>
@@ -273,9 +273,74 @@ function Sidebar({
   );
 }
 
+function MobileHeader({
+  activeSection,
+  menuOpen,
+  onMenuToggle,
+  onSectionChange,
+}: {
+  activeSection: MainSection;
+  menuOpen: boolean;
+  onMenuToggle: () => void;
+  onSectionChange: (section: MainSection) => void;
+}) {
+  return (
+    <header className="sticky top-0 z-40 flex flex-col border-b border-white/10 bg-[#0b0f0d]/95 backdrop-blur-xl md:hidden">
+      <div className="flex min-h-16 w-full items-center justify-between gap-3 px-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-lime-400 text-base font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.28)]">
+            G
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-lg font-black text-white">GymBuddy</p>
+            <p className="truncate text-xs font-bold uppercase tracking-[0.18em] text-lime-300/70">{activeSection}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onMenuToggle}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lime-300"
+          aria-label="Toggle menu"
+          aria-expanded={menuOpen}
+        >
+          <span className="relative block h-4 w-5">
+            <span className={`absolute left-0 h-0.5 w-5 rounded-full bg-current transition ${menuOpen ? "top-2 rotate-45" : "top-0"}`} />
+            <span className={`absolute left-0 top-2 h-0.5 w-5 rounded-full bg-current transition ${menuOpen ? "opacity-0" : "opacity-100"}`} />
+            <span className={`absolute left-0 h-0.5 w-5 rounded-full bg-current transition ${menuOpen ? "top-2 -rotate-45" : "top-4"}`} />
+          </span>
+        </button>
+      </div>
+
+      {menuOpen ? (
+        <nav className="grid w-full grid-cols-1 gap-2 border-t border-white/10 px-4 py-3">
+          {mainMenu.map((item) => {
+            const active = item === activeSection;
+
+            return (
+              <button
+                key={item}
+                type="button"
+                onClick={() => onSectionChange(item)}
+                className={`flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-semibold transition ${
+                  active ? "bg-lime-400 text-[#07100b]" : "bg-white/[0.04] text-zinc-300"
+                }`}
+              >
+                <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md ${active ? "bg-[#07100b]/10" : "bg-white/[0.06]"}`}>
+                  <MenuIcon item={item} active={active} />
+                </span>
+                <span className="truncate">{item}</span>
+              </button>
+            );
+          })}
+        </nav>
+      ) : null}
+    </header>
+  );
+}
+
 function TopBar({ currentRole, activeSection }: { currentRole: Role; activeSection: MainSection }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-white/10 bg-[#101411]/86 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 hidden border-b border-white/10 bg-[#101411]/86 backdrop-blur-xl md:block">
       <div className="flex min-h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-lime-300/70">
@@ -285,7 +350,7 @@ function TopBar({ currentRole, activeSection }: { currentRole: Role; activeSecti
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden h-10 w-64 items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-zinc-500 sm:flex">
+          <div className="hidden h-10 w-64 items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-zinc-500 lg:flex">
             Search members, plans, payments
           </div>
           <button className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lime-300 transition hover:border-lime-300/50 hover:bg-lime-300/10">
@@ -310,7 +375,7 @@ function StatCard({ stat }: { stat: (typeof adminStats)[number] }) {
   }[stat.tone];
 
   return (
-    <section className="rounded-lg border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.025] p-5 shadow-2xl shadow-black/20">
+    <section className="w-full max-w-full rounded-lg border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.025] p-5 shadow-2xl shadow-black/20">
       <div className={`mb-6 h-1 w-12 rounded-full bg-gradient-to-r ${toneClasses} to-transparent`} />
       <p className="text-sm font-medium text-zinc-400">{stat.label}</p>
       <div className="mt-3 flex items-end justify-between gap-3">
@@ -344,7 +409,7 @@ function StatusBadge({ children }: { children: string }) {
 
 function Panel({ title, action, children }: { title: string; action?: string; children: ReactNode }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black/20">
+    <section className="w-full max-w-full rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black/20">
       <div className="mb-5 flex items-center justify-between gap-4">
         <h2 className="text-base font-bold text-white">{title}</h2>
         {action ? <button className="text-sm font-bold text-lime-300 hover:text-lime-200">{action}</button> : null}
@@ -373,7 +438,7 @@ function AdminContent() {
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {adminStats.map((stat) => (
           <StatCard key={stat.label} stat={stat} />
         ))}
@@ -381,7 +446,7 @@ function AdminContent() {
 
       <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
         <Panel title="Recent Members" action="View all">
-          <div className="overflow-x-auto">
+          <div className="w-full max-w-full overflow-x-auto">
             <table className="w-full min-w-[620px] text-left text-sm">
               <thead className="text-xs uppercase tracking-[0.14em] text-zinc-500">
                 <tr className="border-b border-white/10">
@@ -446,7 +511,7 @@ function HomeContent({ onSectionChange }: { onSectionChange: (section: MainSecti
 
   return (
     <div className="space-y-6">
-      <section className="relative min-h-[620px] overflow-hidden rounded-lg border border-white/10 bg-[#111713]">
+      <section className="relative min-h-[620px] w-full max-w-full overflow-hidden rounded-lg border border-white/10 bg-[#111713]">
         <Image
           key={currentImage.src}
           src={currentImage.src}
@@ -471,7 +536,7 @@ function HomeContent({ onSectionChange }: { onSectionChange: (section: MainSecti
 
           <div className="max-w-3xl">
             <p className="mb-4 text-sm font-black uppercase tracking-[0.24em] text-lime-300">{currentImage.title}</p>
-            <h2 className="text-5xl font-black tracking-normal text-white sm:text-6xl lg:text-7xl">
+            <h2 className="text-4xl font-black tracking-normal text-white sm:text-6xl lg:text-7xl">
               Build a stronger gym experience.
             </h2>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-200">{currentImage.copy}</p>
@@ -499,8 +564,8 @@ function HomeContent({ onSectionChange }: { onSectionChange: (section: MainSecti
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-            <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid w-full max-w-full gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 { label: "Members", value: "2.4K" },
                 { label: "Branches", value: "8" },
@@ -530,7 +595,7 @@ function HomeContent({ onSectionChange }: { onSectionChange: (section: MainSecti
         </div>
       </section>
 
-      <div id="about" className="grid gap-6 lg:grid-cols-3">
+      <div id="about" className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {[
           { title: "Start Your Journey", copy: "Choose a plan, meet your trainer, and begin with a clean fitness roadmap." },
           { title: "Start Free Trial", copy: "Try the gym floor, classes, and coaching experience before you commit." },
@@ -551,7 +616,7 @@ function TrainerContent() {
   const [selectedTrainer, setSelectedTrainer] = useState(trainers[0]);
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
+    <div className="grid w-full max-w-full grid-cols-1 gap-6 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)]">
       <Panel title="Trainer List" action={`${trainers.length} trainers`}>
         <div className="space-y-3">
           {trainers.map((trainer) => {
@@ -589,8 +654,8 @@ function TrainerContent() {
         </div>
       </Panel>
 
-      <section className="rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black/20">
-        <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+      <section className="w-full max-w-full rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black/20">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div>
             <div className="flex flex-wrap items-center gap-4">
               <div className="grid h-20 w-20 place-items-center rounded-lg bg-lime-400 text-2xl font-black text-[#07100b] shadow-[0_0_30px_rgba(163,230,53,0.24)]">
@@ -744,8 +809,8 @@ function ToolsContent() {
   const progress = Math.max(0, Math.min(100, ((selectedSeconds - remainingSeconds) / selectedSeconds) * 100));
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
-      <section className="rounded-lg border border-white/10 bg-[#111713] p-6 shadow-2xl shadow-black/20">
+    <div className="grid w-full max-w-full grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <section className="w-full max-w-full rounded-lg border border-white/10 bg-[#111713] p-4 shadow-2xl shadow-black/20 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-lime-300">Tools</p>
@@ -757,7 +822,7 @@ function ToolsContent() {
           <StatusBadge>{isRunning ? "Running" : remainingSeconds === 0 ? "Complete" : "Ready"}</StatusBadge>
         </div>
 
-        <div className="mt-8 grid gap-3 sm:grid-cols-4">
+        <div className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           {timerPresets.map((preset) => {
             const active = preset.seconds === selectedSeconds;
 
@@ -781,7 +846,7 @@ function ToolsContent() {
 
         <div className="mt-8 rounded-lg border border-white/10 bg-black/25 p-6">
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-zinc-500">Remaining</p>
-          <p className="mt-4 text-7xl font-black tracking-normal text-white sm:text-8xl">{formatTime(remainingSeconds)}</p>
+          <p className="mt-4 text-6xl font-black tracking-normal text-white sm:text-8xl">{formatTime(remainingSeconds)}</p>
           <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-lime-300 transition-all" style={{ width: `${progress}%` }} />
           </div>
@@ -871,7 +936,7 @@ function SimpleSection({ section }: { section: Exclude<MainSection, "Home" | "Ad
   }[section];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+    <div className="grid w-full max-w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <Panel title={summaries.title} action="Open">
         <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
           <p className="max-w-2xl text-base leading-7 text-zinc-300">{summaries.copy}</p>
@@ -917,13 +982,13 @@ function MemberContent() {
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {memberStats.map((stat) => (
           <StatCard key={stat.label} stat={stat} />
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Panel title="Recent Attendance" action="History">
           <div className="space-y-3">
             {recentAttendance.map((item) => (
@@ -945,7 +1010,7 @@ function MemberContent() {
             {workoutPlan.map((item) => (
               <div
                 key={`${item.day}-${item.focus}`}
-                className="grid grid-cols-[44px_1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3"
+                className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 sm:grid-cols-[44px_minmax(0,1fr)_auto]"
               >
                 <div className="grid h-11 w-11 place-items-center rounded-lg bg-lime-300/12 text-sm font-black text-lime-200">
                   {item.day}
@@ -966,17 +1031,29 @@ function MemberContent() {
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<MainSection>("Home");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  function handleSectionChange(section: MainSection) {
+    setActiveSection(section);
+    setMobileMenuOpen(false);
+  }
 
   return (
-    <main className="min-h-screen bg-[#0a0d0b] text-white">
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+    <main className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#0a0d0b] text-white">
+      <Sidebar activeSection={activeSection} onSectionChange={handleSectionChange} />
+      <MobileHeader
+        activeSection={activeSection}
+        menuOpen={mobileMenuOpen}
+        onMenuToggle={() => setMobileMenuOpen((open) => !open)}
+        onSectionChange={handleSectionChange}
+      />
 
-      <div className="min-h-screen pl-20 md:pl-72">
+      <div className="min-h-screen w-full max-w-full overflow-x-hidden md:pl-72">
         <TopBar currentRole={role} activeSection={activeSection} />
 
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8">
           {activeSection === "Home" ? (
-            <HomeContent onSectionChange={setActiveSection} />
+            <HomeContent onSectionChange={handleSectionChange} />
           ) : role === "member" ? (
             <MemberContent />
           ) : activeSection === "Admin" ? (
