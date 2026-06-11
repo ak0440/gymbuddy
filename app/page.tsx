@@ -110,10 +110,12 @@ const trainers = [
     clients: 42,
     rating: "4.9",
     branch: "Downtown",
+    location: "Noida",
     status: "Available",
+    image: "/gymbuddy_image/trainer/Animesh.jpeg",
     phone: "+91 98765 43210",
     email: "animesh@gymbuddy.com",
-    bio: "Animesh builds practical strength programs for beginners and advanced members, with a focus on form, consistency, and measurable progress.",
+    bio: "Location: Noida. Animesh builds practical strength programs for beginners and advanced members, with a focus on form, consistency, and measurable progress.",
     schedule: ["Mon 7 AM - 1 PM", "Wed 12 PM - 7 PM", "Fri 7 AM - 3 PM"],
     certifications: ["ACE Personal Trainer", "Kettlebell Fundamentals", "Sports Nutrition"],
   },
@@ -125,7 +127,9 @@ const trainers = [
     clients: 36,
     rating: "4.8",
     branch: "Central",
+    location: "Delhi",
     status: "In session",
+    image: "",
     phone: "+91 98765 43211",
     email: "maya@gymbuddy.com",
     bio: "Maya runs high-energy conditioning plans for members who want better stamina, weight control, and athletic movement.",
@@ -140,7 +144,9 @@ const trainers = [
     clients: 39,
     rating: "4.7",
     branch: "West End",
+    location: "Gurugram",
     status: "Available",
+    image: "",
     phone: "+91 98765 43212",
     email: "arjun@gymbuddy.com",
     bio: "Arjun helps members structure progressive training blocks with simple nutrition habits and clear weekly targets.",
@@ -634,8 +640,12 @@ function TrainerContent() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="grid h-12 w-12 place-items-center rounded-lg bg-lime-400 text-sm font-black text-[#07100b]">
-                    {getInitials(trainer.name)}
+                  <div className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400 text-sm font-black text-[#07100b]">
+                    {trainer.image ? (
+                      <Image src={trainer.image} alt={trainer.name} fill sizes="48px" className="object-cover" />
+                    ) : (
+                      getInitials(trainer.name)
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-base font-black text-white">{trainer.name}</p>
@@ -658,13 +668,26 @@ function TrainerContent() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div>
             <div className="flex flex-wrap items-center gap-4">
-              <div className="grid h-20 w-20 place-items-center rounded-lg bg-lime-400 text-2xl font-black text-[#07100b] shadow-[0_0_30px_rgba(163,230,53,0.24)]">
-                {getInitials(selectedTrainer.name)}
+              <div className="relative grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400 text-2xl font-black text-[#07100b] shadow-[0_0_30px_rgba(163,230,53,0.24)]">
+                {selectedTrainer.image ? (
+                  <Image
+                    src={selectedTrainer.image}
+                    alt={selectedTrainer.name}
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                  />
+                ) : (
+                  getInitials(selectedTrainer.name)
+                )}
               </div>
               <div>
                 <p className="text-sm font-bold uppercase tracking-[0.22em] text-lime-300">Trainer Profile</p>
                 <h2 className="mt-2 text-3xl font-black text-white">{selectedTrainer.name}</h2>
                 <p className="mt-1 text-zinc-400">{selectedTrainer.title}</p>
+                {"location" in selectedTrainer ? (
+                  <p className="mt-2 text-sm font-bold text-lime-200">Location: {selectedTrainer.location}</p>
+                ) : null}
               </div>
             </div>
 
@@ -726,6 +749,12 @@ function TrainerContent() {
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">Specialty</p>
                 <p className="mt-1 font-bold text-white">{selectedTrainer.specialty}</p>
               </div>
+              {"location" in selectedTrainer ? (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">Location</p>
+                  <p className="mt-1 font-bold text-white">{selectedTrainer.location}</p>
+                </div>
+              ) : null}
             </div>
             <button
               type="button"
