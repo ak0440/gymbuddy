@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import ToolsPageContent from "./tools/ToolsPageContent";
 
@@ -305,8 +305,8 @@ function PublicHeader({
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0b0f0d]/95 backdrop-blur-xl">
       <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <button type="button" className="flex items-center gap-3 text-left" aria-label="Go to home">
-          <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400 text-base font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.28)]">
-            <Image src={logoSrc} alt="GymBuddy logo" fill sizes="44px" className="object-contain p-1" />
+          <span className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400 text-base font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.28)]">
+            <Image src={logoSrc} alt="GymBuddy logo" fill sizes="56px" className="object-contain p-1" />
           </span>
           <span className="text-lg font-black text-white">GymBuddy</span>
         </button>
@@ -710,12 +710,17 @@ function HomeContent() {
   const [activeSlide, setActiveSlide] = useState(0);
   const currentImage = heroImages[activeSlide];
   const homeActions = [
-    { label: "Start Your Journey", href: "#start", variant: "primary" },
-    { label: "Start Free Trial", href: "#trial", variant: "secondary" },
-    { label: "Our Services", href: "#about", variant: "secondary" },
-    { label: "Contact Us", href: "tel:+919876543210", variant: "secondary" },
-    { label: "About Us", href: "#about", variant: "secondary" },
+    { label: "Start Free Trial", href: "#trial", variant: "primary" },
+    { label: "Book Demo", href: "tel:+919876543210", variant: "secondary" },
   ];
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveSlide((slide) => (slide + 1) % heroImages.length);
+    }, 4500);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   return (
     <div id="home" className="space-y-6">
@@ -733,24 +738,20 @@ function HomeContent() {
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/65 to-transparent" />
 
         <div className="relative z-10 grid min-h-[620px] content-between gap-8 p-6 sm:p-8 lg:p-10">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3 rounded-lg border border-white/15 bg-black/45 px-4 py-2 backdrop-blur-md">
-              <span className="relative grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-white">
-                <Image src={logoSrc} alt="GymBuddy logo" fill sizes="36px" className="object-contain p-1" />
-              </span>
-              <p className="text-sm font-bold uppercase tracking-[0.24em] text-lime-200">GymBuddy Fitness Club</p>
-            </div>
-            <div className="hidden rounded-lg border border-white/10 bg-black/30 px-4 py-2 text-sm font-bold text-white backdrop-blur-md sm:block">
-              Open 5 AM - 11 PM
-            </div>
-          </div>
+          <div />
 
           <div className="max-w-3xl">
             <p className="mb-4 text-sm font-black uppercase tracking-[0.24em] text-lime-300">{currentImage.title}</p>
-            <h2 className="text-4xl font-black tracking-normal text-white sm:text-6xl lg:text-7xl">
-              Build a stronger gym experience.
+            <h2 className="text-4xl font-black tracking-normal text-white sm:text-5xl lg:text-6xl">
+              Manage Smarter.
+              <br />
+              Train Better.
+              <br />
+              Grow Faster.
             </h2>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-200">{currentImage.copy}</p>
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-200">
+              The all-in-one platform to stay connected, organized, and focused on results.
+            </p>
             <div id="start" className="mt-8 flex flex-wrap gap-3">
               {homeActions.map((action) => {
                 const className =
@@ -770,10 +771,10 @@ function HomeContent() {
           <div className="grid w-full max-w-full gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: "Members", value: "2.4K" },
-                { label: "Branches", value: "8" },
-                { label: "Trainers", value: "32" },
-                { label: "Check-ins", value: "418" },
+                { label: "Active Users", value: "2.4K+" },
+                { label: "Fitness Spaces", value: "8+" },
+                { label: "Daily Sessions", value: "32+" },
+                { label: "Check-ins Logged", value: "48K+" },
               ].map((item) => (
                 <div key={item.label} className="rounded-lg border border-white/10 bg-black/35 p-4 backdrop-blur-md">
                   <p className="text-2xl font-black text-white">{item.value}</p>
@@ -798,19 +799,23 @@ function HomeContent() {
         </div>
       </section>
 
-      <div id="about" className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {[
-          { title: "Start Your Journey", copy: "Choose a plan, meet your trainer, and begin with a clean fitness roadmap." },
-          { title: "Start Free Trial", copy: "Try the gym floor, classes, and coaching experience before you commit." },
-          { title: "About GymBuddy", copy: "A modern fitness club built around strength, coaching, community, and progress." },
-        ].map((item) => (
-          <section key={item.title} className="rounded-lg border border-white/10 bg-[#111713] p-5">
-            <div className="mb-5 h-1 w-12 rounded-full bg-lime-300" />
-            <h3 className="text-lg font-black text-white">{item.title}</h3>
-            <p className="mt-3 text-sm leading-6 text-zinc-400">{item.copy}</p>
-          </section>
-        ))}
-      </div>
+      <footer className="rounded-lg border border-white/10 bg-[#111713] p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400">
+              <Image src={logoSrc} alt="GymBuddy logo" fill sizes="48px" className="object-contain p-1" />
+            </span>
+            <p className="text-lg font-black text-white">GymBuddy</p>
+          </div>
+          <nav className="flex flex-wrap gap-3 text-sm font-bold text-zinc-400">
+            {["Features", "Pricing", "Contact", "Privacy Policy"].map((item) => (
+              <a key={item} href={item === "Contact" ? "tel:+919876543210" : "#home"} className="transition hover:text-lime-200">
+                {item}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 }
