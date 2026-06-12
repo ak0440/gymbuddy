@@ -1,0 +1,60 @@
+@startuml
+title GymBuddy App Boot Up and Dashboard Launch
+
+actor User
+participant Browser
+participant "Next.js App Router" as Next
+participant "Root Layout\napp/layout.tsx" as Layout
+participant "Home Page\napp/page.tsx" as Home
+participant "Public Header" as PublicHeader
+participant "Dashboard Header" as DashboardHeader
+participant "Role Dashboard" as Dashboard
+
+User -> Browser: Open http://127.0.0.1:3000
+Browser -> Next: Request /
+Next -> Layout: Render RootLayout
+Layout -> Home: Render Home component
+
+Home -> Home: Initialize state\nactiveRole = null\nactiveSection = "Home"
+Home -> PublicHeader: Render public navigation
+Home -> Browser: Render homepage hero + footer
+
+User -> PublicHeader: Click Login
+PublicHeader -> Home: Toggle login dropdown
+Home -> Browser: Show role options\nAdmin / Member / Trainer
+
+User -> PublicHeader: Select role
+
+alt Admin selected
+  PublicHeader -> Home: handleLogin("admin")
+  Home -> Home: activeRole = "admin"\nactiveSection = "Admin"
+  Home -> DashboardHeader: Render admin dashboard nav
+  Home -> Dashboard: Render AdminContent
+  Dashboard -> Browser: Show Admin dashboard
+else Trainer selected
+  PublicHeader -> Home: handleLogin("trainer")
+  Home -> Home: activeRole = "trainer"\nactiveSection = "TrainerDashboard"
+  Home -> DashboardHeader: Render trainer dashboard nav
+  Home -> Dashboard: Render TrainerDashboardContent
+  Dashboard -> Browser: Show Trainer dashboard
+else Member selected
+  PublicHeader -> Home: handleLogin("member")
+  Home -> Home: activeRole = "member"\nactiveSection = "Members"
+  Home -> DashboardHeader: Render member dashboard nav
+  Home -> Dashboard: Render MemberContent
+  Dashboard -> Browser: Show Member dashboard
+end
+
+User -> DashboardHeader: Click dashboard menu item
+DashboardHeader -> Home: handleSectionChange(section)
+Home -> Home: Update activeSection
+Home -> Dashboard: Render selected dashboard section
+Dashboard -> Browser: Update visible dashboard
+
+User -> DashboardHeader: Click Home
+DashboardHeader -> Home: handleLogout()
+Home -> Home: activeRole = null\nactiveSection = "Home"
+Home -> PublicHeader: Render public navigation
+Home -> Browser: Return to homepage
+
+@enduml

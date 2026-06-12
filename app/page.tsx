@@ -2,19 +2,25 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
+import MembersPageContent from "./members/MembersPageContent";
+import PaymentsPageContent from "./payments/PaymentsPageContent";
+import SettingsPageContent from "./settings/SettingsPageContent";
 import ToolsPageContent from "./tools/ToolsPageContent";
+import TrainersPageContent from "./trainers/TrainersPageContent";
 
 type Role = "admin" | "member" | "trainer";
 type MainSection =
   | "Home"
   | "Admin"
   | "Members"
+  | "Payments"
   | "Trainer"
   | "TrainerDashboard"
   | "TrainerMembers"
   | "TrainerProfile"
   | "Branches"
   | "Services"
+  | "Settings"
   | "Tools";
 type Tone = "emerald" | "cyan" | "lime" | "amber";
 type MemberStatus = "Active" | "Expired" | "Expiring Soon";
@@ -67,13 +73,14 @@ const role: Role | null = null;
 const logoSrc = "/gymbuddy_image/logo/Logo.png";
 
 const roleMenus: Record<Role, MainSection[]> = {
-  admin: ["Admin", "Members", "Trainer", "Branches", "Services", "Tools"],
-  trainer: ["TrainerDashboard", "TrainerMembers", "TrainerProfile"],
-  member: ["Members", "Tools"],
+  admin: ["Admin", "Members", "Payments", "Trainer", "Tools", "Settings"],
+  trainer: [],
+  member: [],
 };
 
 const menuLabels: Partial<Record<MainSection, string>> = {
   Admin: "Dashboard",
+  Trainer: "Trainers",
   TrainerDashboard: "Dashboard",
   TrainerMembers: "My Members",
   TrainerProfile: "My Profile",
@@ -157,12 +164,6 @@ const trainers = [
   },
 ];
 
-const memberFilters: ("All" | MemberStatus)[] = ["All", "Active", "Expired", "Expiring Soon"];
-
-const membershipPlans = ["Annual"];
-const branches = ["Noida"];
-const trainerNames = ["Animesh"];
-
 const initialMembers: GymMember[] = [
   {
     id: 1,
@@ -181,17 +182,6 @@ const initialMembers: GymMember[] = [
     image: "/gymbuddy_image/member/Amit.jpeg",
   },
 ];
-
-const emptyMemberForm = {
-  name: "",
-  phone: "",
-  email: "",
-  plan: membershipPlans[0],
-  branch: branches[0],
-  startDate: "",
-  expiryDate: "",
-  trainer: trainerNames[0],
-};
 
 const initialAttendanceRecords: AttendanceRecord[] = [
   {
@@ -274,46 +264,39 @@ function Panel({ title, action, children }: { title: string; action?: string; ch
   );
 }
 
-function SocialIcon({ type }: { type: "facebook" | "instagram" }) {
-  if (type === "facebook") {
-    return (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M14.2 8.2H16V5.1c-.3 0-1.4-.1-2.6-.1-2.6 0-4.4 1.6-4.4 4.6v2.6H6v3.5h3V24h3.7v-8.3h3l.5-3.5h-3.5V10c0-1 .3-1.8 1.5-1.8Z" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="5" y="5" width="14" height="14" rx="4" stroke="currentColor" strokeWidth="2" />
-      <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="2" />
-      <circle cx="16.5" cy="7.5" r="1" fill="currentColor" />
-    </svg>
-  );
-}
-
 function PublicHeader({
   loginOpen,
+  portalNotice,
   onLoginToggle,
   onLogin,
 }: {
   loginOpen: boolean;
+  portalNotice: string | null;
   onLoginToggle: () => void;
   onLogin: (role: Role) => void;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0b0f0d]/95 backdrop-blur-xl">
       <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <button type="button" className="flex items-center gap-3 text-left" aria-label="Go to home">
-          <span className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400 text-base font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.28)]">
-            <Image src={logoSrc} alt="GymBuddy logo" fill sizes="56px" className="object-contain p-1" />
+        <button type="button" className="flex items-center gap-3.5 text-left" aria-label="Go to home">
+          <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400 text-base font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.24)] sm:h-14 sm:w-14">
+            <Image src={logoSrc} alt="GymBuddy logo" fill sizes="52px" className="object-contain p-1" />
           </span>
-          <span className="text-lg font-black text-white">GymBuddy</span>
+          <span className="text-xl tracking-normal text-white">
+            <span className="font-semibold">Gym</span>
+            <span className="font-normal text-zinc-100">Buddy</span>
+          </span>
         </button>
 
         <nav className="flex flex-wrap items-center justify-end gap-2">
-          <a href="#home" className="rounded-lg px-3 py-2 text-sm font-bold text-white transition hover:bg-white/[0.06] hover:text-lime-200">
-            Home
+          <a href="#features" className="rounded-lg px-3 py-2 text-sm font-bold text-white transition hover:bg-white/[0.06] hover:text-lime-200">
+            Features
+          </a>
+          <a href="#pricing" className="rounded-lg px-3 py-2 text-sm font-bold text-white transition hover:bg-white/[0.06] hover:text-lime-200">
+            Pricing
+          </a>
+          <a href="#who" className="rounded-lg px-3 py-2 text-sm font-bold text-white transition hover:bg-white/[0.06] hover:text-lime-200">
+            Who It&apos;s For
           </a>
           <div className="relative">
             <button
@@ -324,47 +307,39 @@ function PublicHeader({
               Login
             </button>
             {loginOpen ? (
-              <div className="absolute right-0 mt-2 w-44 rounded-lg border border-white/10 bg-[#111713] p-2 shadow-2xl shadow-black/40">
+              <div className="absolute right-0 mt-2 w-60 rounded-lg border border-white/10 bg-[#111713] p-2 shadow-2xl shadow-black/40">
                 {[
-                  { label: "Admin", role: "admin" },
-                  { label: "Member", role: "member" },
-                  { label: "Trainer", role: "trainer" },
+                  { label: "Admin", role: "admin", available: true },
+                  { label: "Member", role: "member", available: false },
+                  { label: "Trainer", role: "trainer", available: false },
                 ].map((item) => (
                   <button
                     key={item.role}
                     type="button"
                     onClick={() => onLogin(item.role as Role)}
-                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-bold text-zinc-300 transition hover:bg-lime-300/10 hover:text-lime-200"
+                    className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm font-bold text-zinc-300 transition hover:bg-lime-300/10 hover:text-lime-200"
                   >
-                    {item.label}
+                    <span>{item.label}</span>
+                    {!item.available ? (
+                      <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-lime-200">
+                        Coming Soon
+                      </span>
+                    ) : null}
                   </button>
                 ))}
+                {portalNotice ? (
+                  <div className="mt-2 rounded-md border border-lime-300/20 bg-lime-300/10 px-3 py-2 text-xs font-bold text-lime-100">
+                    {portalNotice}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
           <a
-            href="https://www.facebook.com/"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Open Facebook"
-            className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lime-300 transition hover:border-lime-300/50 hover:bg-lime-300/10"
-          >
-            <SocialIcon type="facebook" />
-          </a>
-          <a
-            href="https://www.instagram.com/"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Open Instagram"
-            className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lime-300 transition hover:border-lime-300/50 hover:bg-lime-300/10"
-          >
-            <SocialIcon type="instagram" />
-          </a>
-          <a
             href="tel:+919876543210"
-            className="rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm font-bold text-white transition hover:border-lime-300/40 hover:text-lime-200"
+            className="rounded-lg bg-white px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-100"
           >
-            Contact Us
+            Book Demo
           </a>
         </nav>
       </div>
@@ -384,47 +359,130 @@ function DashboardHeader({
   onLogout: () => void;
 }) {
   const roleLabel = activeRole[0].toUpperCase() + activeRole.slice(1);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const menuItems = roleMenus[activeRole];
+
+  function selectSection(section: MainSection) {
+    onSectionChange(section);
+    setDrawerOpen(false);
+  }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0b0f0d]/95 backdrop-blur-xl">
-      <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400 text-base font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.28)]">
-            <Image src={logoSrc} alt="GymBuddy logo" fill sizes="44px" className="object-contain p-1" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-lg font-black text-white">GymBuddy</p>
-            <p className="truncate text-xs font-bold uppercase tracking-[0.18em] text-lime-300/70">
-              {activeRole === "trainer" ? "Animesh" : `${roleLabel} dashboard`}
-            </p>
-          </div>
-        </div>
-
-        <nav className="flex max-w-full gap-2 overflow-x-auto">
-          {roleMenus[activeRole].map((item) => (
+    <>
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0b0f0d]/95 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3.5">
             <button
-              key={item}
               type="button"
-              onClick={() => onSectionChange(item)}
-              className={`h-10 shrink-0 rounded-lg px-4 text-sm font-bold transition ${
-                activeSection === item
-                  ? "bg-lime-400 text-[#07100b]"
-                  : "border border-white/10 bg-white/[0.05] text-zinc-300 hover:border-lime-300/40 hover:text-lime-200"
-              }`}
+              onClick={() => setDrawerOpen(true)}
+              className="relative grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lime-300 transition hover:border-lime-300/40 hover:bg-lime-300/10 md:hidden"
+              aria-label="Open navigation menu"
             >
-              {menuLabels[item] ?? item}
+              <span className="block h-0.5 w-5 rounded-full bg-current" />
+              <span className="absolute mt-3 block h-0.5 w-5 rounded-full bg-current" />
+              <span className="absolute -mt-3 block h-0.5 w-5 rounded-full bg-current" />
             </button>
-          ))}
+            <div className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400 text-base font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.24)]">
+              <Image src={logoSrc} alt="GymBuddy logo" fill sizes="44px" className="object-contain p-1" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-lg tracking-normal text-white">
+                <span className="font-semibold">Gym</span>
+                <span className="font-normal text-zinc-100">Buddy</span>
+              </p>
+              <p className="truncate text-xs font-bold uppercase tracking-[0.18em] text-lime-300/70">
+                {`${roleLabel} dashboard`}
+              </p>
+            </div>
+          </div>
+
+          <nav className="hidden max-w-full gap-2 overflow-x-auto md:flex">
+            {menuItems.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => selectSection(item)}
+                className={`h-10 shrink-0 rounded-lg px-4 text-sm font-bold transition ${
+                  activeSection === item
+                    ? "bg-lime-400 text-[#07100b]"
+                    : "border border-white/10 bg-white/[0.05] text-zinc-300 hover:border-lime-300/40 hover:text-lime-200"
+                }`}
+              >
+                {menuLabels[item] ?? item}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={onLogout}
+              className="h-10 shrink-0 rounded-lg border border-white/10 bg-white/[0.05] px-4 text-sm font-bold text-white transition hover:border-lime-300/40 hover:text-lime-200"
+            >
+              Logout
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      {drawerOpen ? (
+        <div className="fixed inset-0 z-50 md:hidden">
           <button
             type="button"
-            onClick={onLogout}
-            className="h-10 shrink-0 rounded-lg border border-white/10 bg-white/[0.05] px-4 text-sm font-bold text-white transition hover:border-lime-300/40 hover:text-lime-200"
-          >
-            Home
-          </button>
-        </nav>
-      </div>
-    </header>
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            aria-label="Close navigation menu"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <aside className="relative h-full w-[86vw] max-w-sm border-r border-white/10 bg-[#0b0f0d] p-4 shadow-2xl shadow-black">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div className="flex min-w-0 items-center gap-3.5">
+                <div className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400">
+                  <Image src={logoSrc} alt="GymBuddy logo" fill sizes="40px" className="object-contain p-1" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-base tracking-normal text-white">
+                    <span className="font-semibold">Gym</span>
+                    <span className="font-normal text-zinc-100">Buddy</span>
+                  </p>
+                  <p className="truncate text-xs font-bold uppercase tracking-[0.18em] text-lime-300/70">Admin menu</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-zinc-300 transition hover:border-lime-300/40 hover:text-lime-200"
+                aria-label="Close navigation menu"
+              >
+                x
+              </button>
+            </div>
+            <nav className="mt-4 grid gap-2">
+              {menuItems.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => selectSection(item)}
+                  className={`h-12 rounded-lg px-4 text-left text-sm font-bold transition ${
+                    activeSection === item
+                      ? "bg-lime-400 text-[#07100b]"
+                      : "border border-white/10 bg-white/[0.05] text-zinc-300 hover:border-lime-300/40 hover:text-lime-200"
+                  }`}
+                >
+                  {menuLabels[item] ?? item}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setDrawerOpen(false);
+                  onLogout();
+                }}
+                className="mt-2 h-12 rounded-lg border border-white/10 bg-white/[0.05] px-4 text-left text-sm font-bold text-white transition hover:border-lime-300/40 hover:text-lime-200"
+              >
+                Logout
+              </button>
+            </nav>
+          </aside>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -750,14 +808,14 @@ function HomeContent() {
               Grow Faster.
             </h2>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-200">
-              The all-in-one platform to stay connected, organized, and focused on results.
+              The unified platform for gyms to manage operations, support trainers, and deliver a premium member experience.
             </p>
             <div id="start" className="mt-8 flex flex-wrap gap-3">
               {homeActions.map((action) => {
                 const className =
                   action.variant === "primary"
                     ? "rounded-lg bg-lime-400 px-5 py-3 text-sm font-black text-[#07100b] shadow-[0_0_28px_rgba(163,230,53,0.24)] transition hover:bg-lime-300"
-                    : "rounded-lg border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white transition hover:border-lime-300/40 hover:text-lime-200";
+                    : "rounded-lg bg-white px-5 py-3 text-sm font-black text-[#07100b] transition hover:bg-lime-100";
 
                 return (
                   <a key={action.label} href={action.href} className={className}>
@@ -799,17 +857,50 @@ function HomeContent() {
         </div>
       </section>
 
+      <section id="who" className="rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black/20 sm:p-6">
+        <div className="max-w-2xl">
+          <p className="text-sm font-bold uppercase tracking-[0.22em] text-lime-300">Who It&apos;s For</p>
+          <h2 className="mt-3 text-3xl font-black tracking-normal text-white sm:text-4xl">Three Portals. One Platform.</h2>
+        </div>
+        <div id="features" className="mt-6 grid gap-4 md:grid-cols-3">
+          {[
+            {
+              title: "Owners",
+              text: "Manage operations, memberships, payments, and business visibility.",
+            },
+            {
+              title: "Trainers",
+              text: "Stay organized with assigned members, sessions, and progress tracking.",
+            },
+            {
+              title: "Members",
+              text: "Access fitness updates, check-ins, goals, and a connected gym experience.",
+            },
+          ].map((card) => (
+            <article key={card.title} className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
+              <h3 className="text-xl font-black text-white">{card.title}</h3>
+              <p className="mt-3 text-sm leading-6 text-zinc-400">{card.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="pricing" className="sr-only" aria-label="Pricing" />
+
       <footer className="rounded-lg border border-white/10 bg-[#111713] p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3.5">
             <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400">
               <Image src={logoSrc} alt="GymBuddy logo" fill sizes="48px" className="object-contain p-1" />
             </span>
-            <p className="text-lg font-black text-white">GymBuddy</p>
+            <p className="text-lg tracking-normal text-white">
+              <span className="font-semibold">Gym</span>
+              <span className="font-normal text-zinc-100">Buddy</span>
+            </p>
           </div>
-          <nav className="flex flex-wrap gap-3 text-sm font-bold text-zinc-400">
+          <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-zinc-300">
             {["Features", "Pricing", "Contact", "Privacy Policy"].map((item) => (
-              <a key={item} href={item === "Contact" ? "tel:+919876543210" : "#home"} className="transition hover:text-lime-200">
+              <a key={item} href={item === "Contact" ? "tel:+919876543210" : item === "Features" ? "#features" : item === "Pricing" ? "#pricing" : "#home"} className="transition hover:text-lime-200">
                 {item}
               </a>
             ))}
@@ -820,6 +911,7 @@ function HomeContent() {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function TrainerContent() {
   const [selectedTrainer, setSelectedTrainer] = useState(trainers[0]);
   const assignedMember = initialMembers[0];
@@ -1097,6 +1189,18 @@ function ToolsContent() {
   return <ToolsPageContent />;
 }
 
+function PaymentsContent() {
+  return <PaymentsPageContent />;
+}
+
+function SettingsContent() {
+  return <SettingsPageContent />;
+}
+
+function TrainersContent() {
+  return <TrainersPageContent />;
+}
+
 function MemberStatusBadge({ status }: { status: MemberStatus }) {
   const classes = {
     Active: "border-lime-300/30 bg-lime-300/12 text-lime-200",
@@ -1123,6 +1227,11 @@ function Field({
 }
 
 function MembersContent() {
+  return <MembersPageContent />;
+}
+
+/*
+function LegacyMembersContent() {
   const [members, setMembers] = useState<GymMember[]>(initialMembers);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<(typeof memberFilters)[number]>("All");
@@ -1419,6 +1528,7 @@ function MembersContent() {
     </div>
   );
 }
+*/
 
 function SimpleSection({ section }: { section: "Branches" | "Services" | "Tools" }) {
   const summaries = {
@@ -1537,27 +1647,36 @@ function MemberContent() {
 }
 
 export default function Home() {
-  const [activeRole, setActiveRole] = useState<Role | null>(role);
+  const initialRole: Role | null = typeof window !== "undefined" && window.location.pathname === "/dashboard" ? "admin" : role;
+  const [activeRole, setActiveRole] = useState<Role | null>(initialRole);
   const [activeSection, setActiveSection] = useState<MainSection>(
-    role === "trainer" ? "TrainerDashboard" : role === "admin" ? "Admin" : role === "member" ? "Members" : "Home",
+    initialRole === "trainer" ? "TrainerDashboard" : initialRole === "admin" ? "Admin" : initialRole === "member" ? "Members" : "Home",
   );
   const [loginOpen, setLoginOpen] = useState(false);
+  const [portalNotice, setPortalNotice] = useState<string | null>(null);
 
   function handleLogin(nextRole: Role) {
+    if (nextRole === "trainer") {
+      setPortalNotice("Trainer Portal - Coming Soon");
+      setLoginOpen(true);
+      return;
+    }
+
+    if (nextRole === "member") {
+      setPortalNotice("Member Portal - Coming Soon");
+      setLoginOpen(true);
+      return;
+    }
+
     setActiveRole(nextRole);
     setLoginOpen(false);
+    setPortalNotice(null);
 
     if (nextRole === "admin") {
       setActiveSection("Admin");
+      window.history.pushState(null, "", "/dashboard");
       return;
     }
-
-    if (nextRole === "trainer") {
-      setActiveSection("TrainerDashboard");
-      return;
-    }
-
-    setActiveSection("Members");
   }
 
   function handleSectionChange(section: MainSection) {
@@ -1568,6 +1687,8 @@ export default function Home() {
     setActiveRole(null);
     setActiveSection("Home");
     setLoginOpen(false);
+    setPortalNotice(null);
+    window.history.pushState(null, "", "/");
   }
 
   return (
@@ -1582,7 +1703,11 @@ export default function Home() {
       ) : (
         <PublicHeader
           loginOpen={loginOpen}
-          onLoginToggle={() => setLoginOpen((open) => !open)}
+          portalNotice={portalNotice}
+          onLoginToggle={() => {
+            setLoginOpen((open) => !open);
+            setPortalNotice(null);
+          }}
           onLogin={handleLogin}
         />
       )}
@@ -1592,11 +1717,14 @@ export default function Home() {
           {!activeRole ? <HomeContent /> : null}
           {activeRole === "admin" && activeSection === "Admin" ? <AdminContent /> : null}
           {activeRole === "admin" && activeSection === "Members" ? <MembersContent /> : null}
-          {activeRole === "admin" && activeSection === "Trainer" ? <TrainerContent /> : null}
+          {activeRole === "admin" && activeSection === "Payments" ? <PaymentsContent /> : null}
+          {activeRole === "admin" && activeSection === "Trainer" ? <TrainersContent /> : null}
+          {activeRole === "admin" && activeSection === "Settings" ? <SettingsContent /> : null}
           {activeRole === "trainer" && activeSection === "TrainerDashboard" ? <TrainerDashboardContent /> : null}
           {activeRole === "trainer" && activeSection === "TrainerMembers" ? <TrainerMembersContent /> : null}
           {activeRole === "trainer" && activeSection === "TrainerProfile" ? <TrainerProfileContent /> : null}
           {activeRole === "member" && activeSection === "Members" ? <MemberContent /> : null}
+          {activeRole === "member" && activeSection === "Payments" ? <PaymentsContent /> : null}
           {activeRole && activeSection === "Tools" ? <ToolsContent /> : null}
           {activeRole && ["Branches", "Services"].includes(activeSection) ? (
             <SimpleSection section={activeSection as "Branches" | "Services"} />

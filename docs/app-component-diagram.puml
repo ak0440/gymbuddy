@@ -1,0 +1,92 @@
+@startuml
+title GymBuddy Component Diagram
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #0A0D0B
+skinparam defaultTextAlignment center
+skinparam shadowing false
+skinparam component {
+  BackgroundColor #111713
+  BorderColor #84cc16
+  FontColor #ffffff
+}
+skinparam package {
+  BackgroundColor #0b0f0d
+  BorderColor #3f6212
+  FontColor #ffffff
+}
+skinparam database {
+  BackgroundColor #111713
+  BorderColor #71717a
+  FontColor #ffffff
+}
+
+actor User
+
+package "Browser" {
+  component "GymBuddy UI" as UI
+}
+
+package "Next.js App Router" {
+  component "Root Layout\napp/layout.tsx" as RootLayout
+  component "Home Page\napp/page.tsx" as HomePage
+  component "Tools Route\napp/tools/page.tsx" as ToolsRoute
+  component "Tools Page Content\napp/tools/ToolsPageContent.tsx" as ToolsContent
+}
+
+package "Homepage Components" {
+  component "Public Header" as PublicHeader
+  component "Hero Slideshow" as Hero
+  component "Footer" as Footer
+}
+
+package "Dashboard Components" {
+  component "Dashboard Header" as DashboardHeader
+  component "Admin Dashboard" as AdminDashboard
+  component "Trainer Dashboard" as TrainerDashboard
+  component "Member Dashboard" as MemberDashboard
+  component "Members Page" as MembersPage
+}
+
+package "Tools" {
+  component "Workout Timer" as Timer
+  component "BMI Calculator" as BMI
+  component "Water Intake Calculator" as Water
+  component "1RM Calculator" as OneRM
+}
+
+database "Mock Data\nlocal React state" as MockData
+database "Public Assets\n/images, logo, audio" as Assets
+
+User --> UI
+UI --> RootLayout
+RootLayout --> HomePage
+
+HomePage --> PublicHeader
+HomePage --> Hero
+HomePage --> Footer
+HomePage --> DashboardHeader
+HomePage --> AdminDashboard
+HomePage --> TrainerDashboard
+HomePage --> MemberDashboard
+HomePage --> MembersPage
+HomePage --> ToolsContent
+
+ToolsRoute --> ToolsContent
+ToolsContent --> Timer
+ToolsContent --> BMI
+ToolsContent --> Water
+ToolsContent --> OneRM
+
+Hero --> Assets
+PublicHeader --> Assets
+TrainerDashboard --> Assets
+Timer --> Assets : timerfinish.wav
+
+AdminDashboard --> MockData
+TrainerDashboard --> MockData
+MemberDashboard --> MockData
+MembersPage --> MockData
+ToolsContent --> MockData
+
+@enduml
