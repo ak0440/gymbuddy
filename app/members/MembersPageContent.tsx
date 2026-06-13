@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { supabase } from "../../lib/supabase";
 
 type MemberStatus = "Active" | "Expired" | "Expiring Soon";
 type MemberFilter = "All" | MemberStatus;
+type SupabaseConnectionStatus = "checking" | "connected" | "error";
 
 type Member = {
-  id: number;
+  id: number | string;
   fullName: string;
   phone: string;
+  dob: string;
   email: string;
   plan: string;
   branch: string;
@@ -19,14 +22,42 @@ type Member = {
 
 type MemberForm = Omit<Member, "id">;
 
+type SupabaseMemberRow = {
+  id: number | string;
+  full_name?: string | null;
+  fullName?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  dob?: string | null;
+  date_of_birth?: string | null;
+  dateOfBirth?: string | null;
+  mobile_number?: string | null;
+  mobileNumber?: string | null;
+  email?: string | null;
+  membership_plan?: string | null;
+  membershipPlan?: string | null;
+  plan?: string | null;
+  branch?: string | null;
+  assigned_trainer?: string | null;
+  assignedTrainer?: string | null;
+  trainer?: string | null;
+  join_date?: string | null;
+  joinDate?: string | null;
+  start_date?: string | null;
+  startDate?: string | null;
+  expiry_date?: string | null;
+  expiryDate?: string | null;
+};
+
 const filters: MemberFilter[] = ["All", "Active", "Expired", "Expiring Soon"];
 const plans = ["Annual", "Quarterly", "Monthly", "Strength Plus"];
 const branches = ["Noida", "Central", "Downtown", "West End"];
-const trainers = ["Animesh"];
+const trainers = ["None", "Animesh"];
 
 const emptyForm: MemberForm = {
   fullName: "",
   phone: "",
+  dob: "",
   email: "",
   plan: plans[0],
   branch: branches[0],
@@ -35,22 +66,64 @@ const emptyForm: MemberForm = {
   expiryDate: "",
 };
 
-const initialMembers: Member[] = [
-  {
-    id: 1,
-    fullName: "Amit",
-    phone: "1234567890",
-    email: "amit@gymbuddy.local",
-    plan: "Annual",
-    branch: "Noida",
-    trainer: "Animesh",
-    joinDate: "2026-06-11",
-    expiryDate: "2027-06-10",
-  },
-];
-
 function dateOnly(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function valueToString(value: string | number | null | undefined) {
+  return value === null || value === undefined ? "" : String(value);
+}
+
+function normalizeDate(value: string | null | undefined) {
+  const date = valueToString(value);
+  return date.includes("T") ? date.split("T")[0] : date;
+}
+
+function isValidDob(dob: string) {
+  if (!isValidDateInput(dob)) {
+    return false;
+  }
+
+  const birthDate = dateOnly(new Date(`${dob}T00:00:00`));
+  const earliestDate = dateOnly(new Date("1900-01-01T00:00:00"));
+  const today = dateOnly(new Date());
+
+  return birthDate.getTime() >= earliestDate.getTime() && birthDate.getTime() <= today.getTime();
+}
+
+function isValidDateInput(dateValue: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return false;
+  }
+
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const parsedDate = new Date(`${dateValue}T00:00:00`);
+
+  return (
+    !Number.isNaN(parsedDate.getTime()) &&
+    parsedDate.getFullYear() === year &&
+    parsedDate.getMonth() + 1 === month &&
+    parsedDate.getDate() === day
+  );
+}
+
+function digitsOnly(value: string) {
+  return value.replace(/\D/g, "").slice(0, 10);
+}
+
+function mapSupabaseMember(row: SupabaseMemberRow): Member {
+  return {
+    id: row.id,
+    fullName: valueToString(row.full_name ?? row.fullName ?? row.name),
+    phone: valueToString(row.phone ?? row.mobile_number ?? row.mobileNumber),
+    dob: normalizeDate(row.dob ?? row.date_of_birth ?? row.dateOfBirth),
+    email: valueToString(row.email),
+    plan: valueToString(row.membership_plan ?? row.membershipPlan ?? row.plan),
+    branch: valueToString(row.branch),
+    trainer: valueToString(row.assigned_trainer ?? row.assignedTrainer ?? row.trainer),
+    joinDate: normalizeDate(row.join_date ?? row.joinDate ?? row.start_date ?? row.startDate),
+    expiryDate: normalizeDate(row.expiry_date ?? row.expiryDate),
+  };
 }
 
 function getDaysRemaining(expiryDate: string) {
@@ -108,16 +181,111 @@ function textInputClass() {
   return "h-11 w-full rounded-lg border border-white/10 bg-black/25 px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60";
 }
 
+function memberFilterFromValue(value: string | null | undefined): MemberFilter {
+  const normalizedValue = value?.toLowerCase();
+
+  if (normalizedValue === "active") {
+    return "Active";
+  }
+
+  if (normalizedValue === "expiring") {
+    return "Expiring Soon";
+  }
+
+  if (normalizedValue === "expired") {
+    return "Expired";
+  }
+
+  return "All";
+}
+
 export default function MembersPageContent() {
-  const [members, setMembers] = useState<Member[]>(initialMembers);
+  const [members, setMembers] = useState<Member[]>([]);
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<MemberFilter>("All");
+  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [membersError, setMembersError] = useState(false);
+  const [supabaseStatus, setSupabaseStatus] = useState<SupabaseConnectionStatus>("checking");
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const [editingMemberId, setEditingMemberId] = useState<number | string | null>(null);
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Member | null>(null);
   const [form, setForm] = useState<MemberForm>(emptyForm);
+  const [savingMember, setSavingMember] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [deletingMember, setDeletingMember] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const loadMembers = useCallback(async () => {
+    setLoadingMembers(true);
+    setMembersError(false);
+
+    const { data, error } = await supabase.from("members").select("*");
+
+    if (error) {
+      console.error("Failed to load members", error);
+      setMembers([]);
+      setMembersError(true);
+      setLoadingMembers(false);
+      return;
+    }
+
+    setMembers((data ?? []).map((member) => mapSupabaseMember(member as SupabaseMemberRow)));
+    setLoadingMembers(false);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function checkSupabaseConnection() {
+      const { error } = await supabase.from("members").select("id").limit(1);
+
+      if (!active) {
+        return;
+      }
+
+      if (error) {
+        console.error("Supabase connection failed", error);
+        setSupabaseStatus("error");
+        return;
+      }
+
+      console.log("Supabase connection OK");
+      setSupabaseStatus("connected");
+    }
+
+    checkSupabaseConnection();
+    const loadTimer = window.setTimeout(() => {
+      loadMembers();
+    }, 0);
+
+    return () => {
+      active = false;
+      window.clearTimeout(loadTimer);
+    };
+  }, [loadMembers]);
+
+  useEffect(() => {
+    function applyFilter(value: string | null | undefined) {
+      setActiveFilter(memberFilterFromValue(value));
+    }
+
+    const timer = window.setTimeout(() => {
+      applyFilter(new URLSearchParams(window.location.search).get("filter"));
+    }, 0);
+
+    function handleFilter(event: Event) {
+      applyFilter((event as CustomEvent<string>).detail);
+    }
+
+    window.addEventListener("gymbuddy:members-filter", handleFilter);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("gymbuddy:members-filter", handleFilter);
+    };
+  }, []);
 
   const summary = useMemo(() => {
     const counts = {
@@ -151,12 +319,19 @@ export default function MembersPageContent() {
   });
 
   function updateForm(field: keyof MemberForm, value: string) {
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => {
+      if ((field === "dob" || field === "joinDate" || field === "expiryDate") && value.length > 10) {
+        return current;
+      }
+
+      return { ...current, [field]: field === "phone" ? digitsOnly(value) : value };
+    });
   }
 
   function openAddModal() {
     setEditingMemberId(null);
     setForm(emptyForm);
+    setSaveError("");
     setModalOpen(true);
   }
 
@@ -165,6 +340,7 @@ export default function MembersPageContent() {
     setForm({
       fullName: member.fullName,
       phone: member.phone,
+      dob: member.dob,
       email: member.email,
       plan: member.plan,
       branch: member.branch,
@@ -172,6 +348,7 @@ export default function MembersPageContent() {
       joinDate: member.joinDate,
       expiryDate: member.expiryDate,
     });
+    setSaveError("");
     setModalOpen(true);
   }
 
@@ -179,42 +356,102 @@ export default function MembersPageContent() {
     setModalOpen(false);
     setEditingMemberId(null);
     setForm(emptyForm);
+    setSaveError("");
+    setSavingMember(false);
   }
 
-  function saveMember() {
-    if (!form.fullName.trim() || !form.phone.trim() || !form.email.trim() || !form.joinDate || !form.expiryDate) {
+  async function saveMember() {
+    if (!form.fullName.trim() || !form.phone.trim() || !form.dob || !form.email.trim() || !form.joinDate || !form.expiryDate) {
+      setSaveError("Please fill all required member details.");
       return;
     }
 
-    if (editingMemberId) {
-      setMembers((current) =>
-        current.map((member) =>
-          member.id === editingMemberId ? { ...member, ...form, fullName: form.fullName.trim(), phone: form.phone.trim(), email: form.email.trim() } : member,
-        ),
-      );
-    } else {
-      setMembers((current) => [
-        {
-          id: Date.now(),
-          ...form,
-          fullName: form.fullName.trim(),
-          phone: form.phone.trim(),
-          email: form.email.trim(),
-        },
-        ...current,
-      ]);
+    if (!/^\d{10}$/.test(form.phone)) {
+      setSaveError("Mobile number must be exactly 10 digits.");
+      return;
     }
 
+    if (!isValidDob(form.dob)) {
+      setSaveError("Please enter a valid DOB. DOB cannot be in the future.");
+      return;
+    }
+
+    if (!isValidDateInput(form.joinDate) || !isValidDateInput(form.expiryDate)) {
+      setSaveError("Please enter valid dates using a 4 digit year.");
+      return;
+    }
+
+    if (dateOnly(new Date(`${form.expiryDate}T00:00:00`)).getTime() < dateOnly(new Date(`${form.joinDate}T00:00:00`)).getTime()) {
+      setSaveError("Expiry date cannot be before join date.");
+      return;
+    }
+
+    setSavingMember(true);
+    setSaveError("");
+
+    const memberPayload = {
+      full_name: form.fullName.trim(),
+      phone: form.phone.trim(),
+      dob: form.dob,
+      email: form.email.trim(),
+      membership_plan: form.plan,
+      branch: form.branch,
+      assigned_trainer: form.trainer,
+      join_date: form.joinDate,
+      expiry_date: form.expiryDate,
+    };
+
+    if (editingMemberId) {
+      const { error } = await supabase.from("members").update(memberPayload).eq("id", editingMemberId);
+
+      if (error) {
+        console.error("Failed to update member", error);
+        setSaveError("Could not update member. Please check the details and try again.");
+        setSavingMember(false);
+        return;
+      }
+
+      console.log("Member updated successfully");
+      await loadMembers();
+      closeModal();
+      return;
+    }
+
+    const { error } = await supabase.from("members").insert(memberPayload);
+
+    if (error) {
+      console.error("Failed to add member", error);
+      setSaveError("Could not save member. Please check the details and try again.");
+      setSavingMember(false);
+      return;
+    }
+
+    console.log("Member added successfully");
+    await loadMembers();
     closeModal();
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteTarget) {
       return;
     }
 
-    setMembers((current) => current.filter((member) => member.id !== deleteTarget.id));
+    setDeletingMember(true);
+    setDeleteError("");
+
+    const { error } = await supabase.from("members").delete().eq("id", deleteTarget.id);
+
+    if (error) {
+      console.error("Failed to delete member", error);
+      setDeleteError("Could not delete member. Please try again.");
+      setDeletingMember(false);
+      return;
+    }
+
+    console.log("Member deleted successfully");
+    await loadMembers();
     setDeleteTarget(null);
+    setDeletingMember(false);
   }
 
   function applySearch() {
@@ -226,6 +463,18 @@ export default function MembersPageContent() {
     setSearchTerm("");
   }
 
+  const emptyMessage = members.length === 0 ? "No members found" : "No members match the current search.";
+  const supabaseStatusLabel = {
+    checking: "Supabase: Checking...",
+    connected: "Supabase: Connected ✅",
+    error: "Supabase: Error ❌",
+  }[supabaseStatus];
+  const supabaseStatusClass = {
+    checking: "border-amber-300/30 bg-amber-300/10 text-amber-100",
+    connected: "border-lime-300/30 bg-lime-300/10 text-lime-100",
+    error: "border-red-300/25 bg-red-300/10 text-red-100",
+  }[supabaseStatus];
+
   return (
     <div className="space-y-6">
       <section className="flex flex-col gap-4 rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black/20 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
@@ -234,13 +483,18 @@ export default function MembersPageContent() {
           <h2 className="mt-3 text-3xl font-black tracking-normal text-white sm:text-4xl">Members</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Manage gym members, plans, status, and renewals.</p>
         </div>
-        <button
-          type="button"
-          onClick={openAddModal}
-          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.22)] transition hover:bg-lime-300 sm:w-auto"
-        >
-          Add Member
-        </button>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+          <span className={`inline-flex h-8 items-center rounded-lg border px-3 text-xs font-bold ${supabaseStatusClass}`}>
+            {supabaseStatusLabel}
+          </span>
+          <button
+            type="button"
+            onClick={openAddModal}
+            className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.22)] transition hover:bg-lime-300 sm:w-auto"
+          >
+            Add Member
+          </button>
+        </div>
       </section>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -316,7 +570,7 @@ export default function MembersPageContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {visibleMembers.map((member) => {
+              {!loadingMembers && !membersError ? visibleMembers.map((member) => {
                 const status = getMembershipStatus(member.expiryDate);
 
                 return (
@@ -334,20 +588,22 @@ export default function MembersPageContent() {
                       <div className="flex gap-2">
                         <button type="button" onClick={() => setViewingMember(member)} className="rounded-md border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-bold text-zinc-300 hover:text-lime-200">View</button>
                         <button type="button" onClick={() => openEditModal(member)} className="rounded-md border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-bold text-zinc-300 hover:text-lime-200">Edit</button>
-                        <button type="button" onClick={() => setDeleteTarget(member)} className="rounded-md border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-bold text-red-200">Delete</button>
+                        <button type="button" onClick={() => { setDeleteError(""); setDeleteTarget(member); }} className="rounded-md border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-bold text-red-200">Delete</button>
                       </div>
                     </td>
                   </tr>
                 );
-              })}
+              }) : null}
             </tbody>
           </table>
-          {visibleMembers.length === 0 ? <p className="py-8 text-center text-sm font-semibold text-zinc-500">No members match the current search.</p> : null}
+          {loadingMembers ? <p className="py-8 text-center text-sm font-semibold text-zinc-500">Loading members...</p> : null}
+          {membersError ? <p className="py-8 text-center text-sm font-semibold text-red-200">Failed to load members</p> : null}
+          {!loadingMembers && !membersError && visibleMembers.length === 0 ? <p className="py-8 text-center text-sm font-semibold text-zinc-500">{emptyMessage}</p> : null}
         </div>
       </section>
 
       <div className="grid gap-3 md:hidden">
-        {visibleMembers.map((member) => {
+        {!loadingMembers && !membersError ? visibleMembers.map((member) => {
           const status = getMembershipStatus(member.expiryDate);
 
           return (
@@ -369,12 +625,14 @@ export default function MembersPageContent() {
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <button type="button" onClick={() => setViewingMember(member)} className="rounded-md border border-white/10 bg-white/[0.05] py-2 text-xs font-bold text-zinc-300">View</button>
                 <button type="button" onClick={() => openEditModal(member)} className="rounded-md border border-white/10 bg-white/[0.05] py-2 text-xs font-bold text-zinc-300">Edit</button>
-                <button type="button" onClick={() => setDeleteTarget(member)} className="rounded-md border border-red-300/20 bg-red-300/10 py-2 text-xs font-bold text-red-200">Delete</button>
+                <button type="button" onClick={() => { setDeleteError(""); setDeleteTarget(member); }} className="rounded-md border border-red-300/20 bg-red-300/10 py-2 text-xs font-bold text-red-200">Delete</button>
               </div>
             </article>
           );
-        })}
-        {visibleMembers.length === 0 ? <p className="rounded-lg border border-white/10 bg-[#111713] p-5 text-center text-sm font-semibold text-zinc-500">No members match the current search.</p> : null}
+        }) : null}
+        {loadingMembers ? <p className="rounded-lg border border-white/10 bg-[#111713] p-5 text-center text-sm font-semibold text-zinc-500">Loading members...</p> : null}
+        {membersError ? <p className="rounded-lg border border-white/10 bg-[#111713] p-5 text-center text-sm font-semibold text-red-200">Failed to load members</p> : null}
+        {!loadingMembers && !membersError && visibleMembers.length === 0 ? <p className="rounded-lg border border-white/10 bg-[#111713] p-5 text-center text-sm font-semibold text-zinc-500">{emptyMessage}</p> : null}
       </div>
 
       {modalOpen ? (
@@ -389,17 +647,25 @@ export default function MembersPageContent() {
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <Field label="Full Name"><input value={form.fullName} onChange={(event) => updateForm("fullName", event.target.value)} className={textInputClass()} /></Field>
-              <Field label="Phone"><input value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} className={textInputClass()} /></Field>
+              <Field label="Phone"><input inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} className={textInputClass()} /></Field>
+              <Field label="DOB"><input type="date" min="1900-01-01" max="9999-12-31" value={form.dob} onChange={(event) => updateForm("dob", event.target.value)} className={textInputClass()} /></Field>
               <Field label="Email"><input type="email" value={form.email} onChange={(event) => updateForm("email", event.target.value)} className={textInputClass()} /></Field>
               <Field label="Membership Plan"><select value={form.plan} onChange={(event) => updateForm("plan", event.target.value)} className={textInputClass()}>{plans.map((plan) => <option key={plan}>{plan}</option>)}</select></Field>
               <Field label="Branch"><select value={form.branch} onChange={(event) => updateForm("branch", event.target.value)} className={textInputClass()}>{branches.map((branch) => <option key={branch}>{branch}</option>)}</select></Field>
               <Field label="Assigned Trainer"><select value={form.trainer} onChange={(event) => updateForm("trainer", event.target.value)} className={textInputClass()}>{trainers.map((trainer) => <option key={trainer}>{trainer}</option>)}</select></Field>
-              <Field label="Join Date"><input type="date" value={form.joinDate} onChange={(event) => updateForm("joinDate", event.target.value)} className={textInputClass()} /></Field>
-              <Field label="Expiry Date"><input type="date" value={form.expiryDate} onChange={(event) => updateForm("expiryDate", event.target.value)} className={textInputClass()} /></Field>
+              <Field label="Join Date"><input type="date" min="1900-01-01" max="9999-12-31" value={form.joinDate} onChange={(event) => updateForm("joinDate", event.target.value)} className={textInputClass()} /></Field>
+              <Field label="Expiry Date"><input type="date" min="1900-01-01" max="9999-12-31" value={form.expiryDate} onChange={(event) => updateForm("expiryDate", event.target.value)} className={textInputClass()} /></Field>
             </div>
+            {saveError ? (
+              <p className="mt-4 rounded-lg border border-red-300/20 bg-red-300/10 px-3 py-2 text-sm font-semibold text-red-100">
+                {saveError}
+              </p>
+            ) : null}
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button type="button" onClick={closeModal} className="h-11 rounded-lg border border-white/10 bg-white/[0.05] px-5 text-sm font-bold text-white">Cancel</button>
-              <button type="button" onClick={saveMember} className="h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b]">Save Member</button>
+              <button type="button" onClick={closeModal} disabled={savingMember} className="h-11 rounded-lg border border-white/10 bg-white/[0.05] px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
+              <button type="button" onClick={saveMember} disabled={savingMember} className="h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-70">
+                {savingMember ? "Saving..." : "Save Member"}
+              </button>
             </div>
           </div>
         </div>
@@ -456,10 +722,17 @@ export default function MembersPageContent() {
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black">
             <h3 className="text-xl font-black text-white">Delete member?</h3>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">This will remove {deleteTarget.fullName} from local state.</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">This will remove {deleteTarget.fullName} from the members database.</p>
+            {deleteError ? (
+              <p className="mt-4 rounded-lg border border-red-300/20 bg-red-300/10 px-3 py-2 text-sm font-semibold text-red-100">
+                {deleteError}
+              </p>
+            ) : null}
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button type="button" onClick={() => setDeleteTarget(null)} className="h-11 rounded-lg border border-white/10 bg-white/[0.05] px-5 text-sm font-bold text-white">Cancel</button>
-              <button type="button" onClick={confirmDelete} className="h-11 rounded-lg bg-red-400 px-5 text-sm font-black text-[#160707]">Delete</button>
+              <button type="button" onClick={() => { setDeleteTarget(null); setDeleteError(""); }} disabled={deletingMember} className="h-11 rounded-lg border border-white/10 bg-white/[0.05] px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
+              <button type="button" onClick={confirmDelete} disabled={deletingMember} className="h-11 rounded-lg bg-red-400 px-5 text-sm font-black text-[#160707] disabled:cursor-not-allowed disabled:opacity-70">
+                {deletingMember ? "Deleting..." : "Delete"}
+              </button>
             </div>
           </div>
         </div>

@@ -7,6 +7,7 @@ import PaymentsPageContent from "./payments/PaymentsPageContent";
 import SettingsPageContent from "./settings/SettingsPageContent";
 import ToolsPageContent from "./tools/ToolsPageContent";
 import TrainersPageContent from "./trainers/TrainersPageContent";
+import { supabase } from "../lib/supabase";
 
 type Role = "admin" | "member" | "trainer";
 type MainSection =
@@ -23,7 +24,26 @@ type MainSection =
   | "Settings"
   | "Tools";
 type Tone = "emerald" | "cyan" | "lime" | "amber";
+type DashboardStat = { label: string; value: string; trend: string; tone: Tone };
 type MemberStatus = "Active" | "Expired" | "Expiring Soon";
+type NavChild = {
+  label: string;
+  section: MainSection;
+  params?: Record<string, string>;
+};
+type AdminNavItem =
+  | {
+      type: "single";
+      label: string;
+      section: MainSection;
+      params?: Record<string, string>;
+    }
+  | {
+      type: "group";
+      label: string;
+      section: MainSection;
+      children: NavChild[];
+    };
 
 type GymMember = {
   id: number;
@@ -51,13 +71,22 @@ type AttendanceRecord = {
   trainer: string;
 };
 
-const adminMenu = [
-  "Dashboard",
-  "Attendance",
-  "Payments",
-  "Reports",
-  "Settings",
-];
+type AdminDashboardMember = {
+  id: number | string;
+  name: string;
+  plan: string;
+  expiryDate: string;
+};
+
+type AdminDashboardMemberRow = {
+  id: number | string;
+  full_name?: string | null;
+  name?: string | null;
+  membership_plan?: string | null;
+  plan?: string | null;
+  expiry_date?: string | null;
+  expiryDate?: string | null;
+};
 
 const memberMenu = [
   "Dashboard",
@@ -72,11 +101,43 @@ const memberMenu = [
 const role: Role | null = null;
 const logoSrc = "/gymbuddy_image/logo/Logo.png";
 
-const roleMenus: Record<Role, MainSection[]> = {
-  admin: ["Admin", "Members", "Payments", "Trainer", "Tools", "Settings"],
-  trainer: [],
-  member: [],
-};
+const adminNavigation: AdminNavItem[] = [
+  { type: "single", label: "Dashboard", section: "Admin" },
+  {
+    type: "group",
+    label: "Members",
+    section: "Members",
+    children: [
+      { label: "All Members", section: "Members", params: { filter: "all" } },
+      { label: "Active Members", section: "Members", params: { filter: "active" } },
+      { label: "Membership Expiring Soon", section: "Members", params: { filter: "expiring" } },
+      { label: "Expired Members", section: "Members", params: { filter: "expired" } },
+    ],
+  },
+  {
+    type: "group",
+    label: "Trainers",
+    section: "Trainer",
+    children: [
+      { label: "All Trainers", section: "Trainer", params: { filter: "all" } },
+      { label: "Active Trainers", section: "Trainer", params: { filter: "active" } },
+      { label: "Member Mapping", section: "Trainer", params: { view: "mapping" } },
+    ],
+  },
+  {
+    type: "group",
+    label: "Business",
+    section: "Payments",
+    children: [
+      { label: "Payments", section: "Payments", params: { view: "payments" } },
+      { label: "Revenue", section: "Payments", params: { view: "revenue" } },
+      { label: "Renewals", section: "Payments", params: { view: "renewals" } },
+      { label: "Reports", section: "Payments", params: { view: "reports" } },
+    ],
+  },
+  { type: "single", label: "Settings", section: "Settings" },
+  { type: "single", label: "Tools", section: "Tools" },
+];
 
 const menuLabels: Partial<Record<MainSection, string>> = {
   Admin: "Dashboard",
@@ -109,22 +170,11 @@ const heroImages = [
   },
 ];
 
-const adminStats: { label: string; value: string; trend: string; tone: Tone }[] = [
-  { label: "Total Members", value: "1", trend: "Amit", tone: "emerald" },
-  { label: "Active Members", value: "1", trend: "Active", tone: "cyan" },
-  { label: "Revenue", value: "Annual", trend: "Current plan", tone: "lime" },
-  { label: "Expiring Memberships", value: "0", trend: "No alerts", tone: "amber" },
-];
-
-const memberStats: { label: string; value: string; trend: string; tone: Tone }[] = [
+const memberStats: DashboardStat[] = [
   { label: "Membership Status", value: "Active", trend: "Premium plan", tone: "emerald" },
   { label: "Days Remaining", value: "42", trend: "Renews soon", tone: "lime" },
   { label: "Attendance Count", value: "18", trend: "This month", tone: "cyan" },
   { label: "Next Renewal Date", value: "Jul 22", trend: "Auto-pay on", tone: "amber" },
-];
-
-const recentMembers = [
-  { name: "Amit", plan: "Annual", branch: "Noida", joined: "Active", status: "Active" },
 ];
 
 const expiringMemberships = [
@@ -194,7 +244,7 @@ const initialAttendanceRecords: AttendanceRecord[] = [
   },
 ];
 
-const trainerDashboardStats: { label: string; value: string; trend: string; tone: Tone }[] = [
+const trainerDashboardStats: DashboardStat[] = [
   { label: "Assigned Members", value: "1", trend: "Amit", tone: "emerald" },
   { label: "Completed Sessions", value: "0", trend: "Amit", tone: "cyan" },
 ];
@@ -211,7 +261,52 @@ function getInitials(label: string) {
     .slice(0, 2);
 }
 
-function StatCard({ stat }: { stat: (typeof adminStats)[number] }) {
+function dashboardDateOnly(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function dashboardDaysRemaining(expiryDate: string) {
+  if (!expiryDate) {
+    return 0;
+  }
+
+  const today = dashboardDateOnly(new Date());
+  const expiry = dashboardDateOnly(new Date(`${expiryDate}T00:00:00`));
+  return Math.ceil((expiry.getTime() - today.getTime()) / 86400000);
+}
+
+function dashboardMemberStatus(expiryDate: string): MemberStatus {
+  const daysRemaining = dashboardDaysRemaining(expiryDate);
+
+  if (daysRemaining < 0) {
+    return "Expired";
+  }
+
+  if (daysRemaining <= 7) {
+    return "Expiring Soon";
+  }
+
+  return "Active";
+}
+
+function normalizeDashboardDate(value: string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  return value.includes("T") ? value.split("T")[0] : value;
+}
+
+function mapDashboardMember(row: AdminDashboardMemberRow): AdminDashboardMember {
+  return {
+    id: row.id,
+    name: row.full_name ?? row.name ?? "Unnamed Member",
+    plan: row.membership_plan ?? row.plan ?? "Membership",
+    expiryDate: normalizeDashboardDate(row.expiry_date ?? row.expiryDate),
+  };
+}
+
+function StatCard({ stat }: { stat: DashboardStat }) {
   const toneClasses = {
     emerald: "from-emerald-300/18 text-emerald-200",
     cyan: "from-cyan-300/18 text-cyan-200",
@@ -265,15 +360,11 @@ function Panel({ title, action, children }: { title: string; action?: string; ch
 }
 
 function PublicHeader({
-  loginOpen,
-  portalNotice,
-  onLoginToggle,
-  onLogin,
+  isAuthenticated,
+  onLoginClick,
 }: {
-  loginOpen: boolean;
-  portalNotice: string | null;
-  onLoginToggle: () => void;
-  onLogin: (role: Role) => void;
+  isAuthenticated: boolean;
+  onLoginClick: () => void;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0b0f0d]/95 backdrop-blur-xl">
@@ -298,43 +389,22 @@ function PublicHeader({
           <a href="#who" className="rounded-lg px-3 py-2 text-sm font-bold text-white transition hover:bg-white/[0.06] hover:text-lime-200">
             Who It&apos;s For
           </a>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={onLoginToggle}
+          {isAuthenticated ? (
+            <a
+              href="/dashboard"
               className="rounded-lg bg-lime-400 px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-300"
             >
-              Login
+              Dashboard
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={onLoginClick}
+              className="rounded-lg bg-lime-400 px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-300"
+            >
+              Partner Login
             </button>
-            {loginOpen ? (
-              <div className="absolute right-0 mt-2 w-60 rounded-lg border border-white/10 bg-[#111713] p-2 shadow-2xl shadow-black/40">
-                {[
-                  { label: "Admin", role: "admin", available: true },
-                  { label: "Member", role: "member", available: false },
-                  { label: "Trainer", role: "trainer", available: false },
-                ].map((item) => (
-                  <button
-                    key={item.role}
-                    type="button"
-                    onClick={() => onLogin(item.role as Role)}
-                    className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm font-bold text-zinc-300 transition hover:bg-lime-300/10 hover:text-lime-200"
-                  >
-                    <span>{item.label}</span>
-                    {!item.available ? (
-                      <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-lime-200">
-                        Coming Soon
-                      </span>
-                    ) : null}
-                  </button>
-                ))}
-                {portalNotice ? (
-                  <div className="mt-2 rounded-md border border-lime-300/20 bg-lime-300/10 px-3 py-2 text-xs font-bold text-lime-100">
-                    {portalNotice}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
+          )}
           <a
             href="tel:+919876543210"
             className="rounded-lg bg-white px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-100"
@@ -344,6 +414,126 @@ function PublicHeader({
         </nav>
       </div>
     </header>
+  );
+}
+
+function LoginModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [onClose]);
+
+  async function loginAdmin() {
+    setErrorMessage("");
+
+    if (!email.trim() || !password) {
+      setErrorMessage("Please enter your admin email and password.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (error) {
+      console.error("Admin login failed", error);
+      setErrorMessage("Invalid admin email or password.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    onClose();
+    window.location.href = "/dashboard";
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/70 px-4 py-6 backdrop-blur-sm">
+      <button type="button" className="absolute inset-0 cursor-default" aria-label="Close login modal" onClick={onClose} />
+      <section className="relative w-full max-w-md rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.22em] text-lime-300">Partner Login</p>
+            <h2 className="mt-2 text-2xl font-black text-white">Partner Login</h2>
+            <p className="mt-1 text-sm text-zinc-400">Access your gym management workspace.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-zinc-300 transition hover:border-lime-300/40 hover:text-lime-200"
+            aria-label="Close login modal"
+          >
+            x
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-4">
+          <label className="block">
+            <span className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/25 px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  loginAdmin();
+                }
+              }}
+              className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/25 px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60"
+            />
+          </label>
+        </div>
+
+        {errorMessage ? (
+          <p className="mt-4 rounded-lg border border-red-300/20 bg-red-300/10 px-3 py-2 text-sm font-semibold text-red-100">{errorMessage}</p>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={loginAdmin}
+          disabled={isSubmitting}
+          className="mt-6 h-11 w-full rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isSubmitting ? "Signing in..." : "Sign In"}
+        </button>
+
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          {["Trainer", "Member"].map((role) => (
+            <div key={role} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-bold text-zinc-400">
+              <span>{role}</span>
+              <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-lime-200">
+                Coming Soon
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -360,11 +550,34 @@ function DashboardHeader({
 }) {
   const roleLabel = activeRole[0].toUpperCase() + activeRole.slice(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const menuItems = roleMenus[activeRole];
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    Members: false,
+    Trainers: false,
+    Business: false,
+  });
+  const menuItems = activeRole === "admin" ? adminNavigation : [];
 
-  function selectSection(section: MainSection) {
+  function updateDashboardUrl(section: MainSection, params?: Record<string, string>) {
+    const query = new URLSearchParams({ section: menuLabels[section] ?? section });
+
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => query.set(key, value));
+    }
+
+    window.history.pushState(null, "", `/dashboard?${query.toString()}`);
+  }
+
+  function selectSection(section: MainSection, params?: Record<string, string>) {
     onSectionChange(section);
+    updateDashboardUrl(section, params);
+    if (section === "Members" && params?.filter) {
+      window.dispatchEvent(new CustomEvent("gymbuddy:members-filter", { detail: params.filter }));
+    }
     setDrawerOpen(false);
+  }
+
+  function toggleGroup(label: string) {
+    setExpandedGroups((current) => ({ ...current, [label]: !current[label] }));
   }
 
   return (
@@ -396,20 +609,51 @@ function DashboardHeader({
             </div>
           </div>
 
-          <nav className="hidden max-w-full gap-2 overflow-x-auto md:flex">
+          <nav className="hidden max-w-full gap-2 md:flex">
             {menuItems.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => selectSection(item)}
-                className={`h-10 shrink-0 rounded-lg px-4 text-sm font-bold transition ${
-                  activeSection === item
-                    ? "bg-lime-400 text-[#07100b]"
-                    : "border border-white/10 bg-white/[0.05] text-zinc-300 hover:border-lime-300/40 hover:text-lime-200"
-                }`}
-              >
-                {menuLabels[item] ?? item}
-              </button>
+              item.type === "single" ? (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => selectSection(item.section, item.params)}
+                  className={`h-10 shrink-0 rounded-lg px-4 text-sm font-bold transition ${
+                    activeSection === item.section
+                      ? "bg-lime-400 text-[#07100b]"
+                      : "border border-white/10 bg-white/[0.05] text-zinc-300 hover:border-lime-300/40 hover:text-lime-200"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ) : (
+                <div key={item.label} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(item.label)}
+                    className={`h-10 shrink-0 rounded-lg px-4 text-sm font-bold transition ${
+                      activeSection === item.section
+                        ? "bg-lime-400 text-[#07100b]"
+                        : "border border-white/10 bg-white/[0.05] text-zinc-300 hover:border-lime-300/40 hover:text-lime-200"
+                    }`}
+                  >
+                    {item.label}
+                    <span className="ml-2 text-xs">{expandedGroups[item.label] ? "-" : "+"}</span>
+                  </button>
+                  {expandedGroups[item.label] ? (
+                    <div className="absolute right-0 top-12 z-50 w-52 rounded-lg border border-white/10 bg-[#111713] p-2 shadow-2xl shadow-black/50">
+                      {item.children.map((child) => (
+                        <button
+                          key={child.label}
+                          type="button"
+                          onClick={() => selectSection(child.section, child.params)}
+                          className="block w-full rounded-md px-3 py-2 text-left text-sm font-bold text-zinc-300 transition hover:bg-lime-300/10 hover:text-lime-200"
+                        >
+                          {child.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              )
             ))}
             <button
               type="button"
@@ -455,18 +699,47 @@ function DashboardHeader({
             </div>
             <nav className="mt-4 grid gap-2">
               {menuItems.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => selectSection(item)}
-                  className={`h-12 rounded-lg px-4 text-left text-sm font-bold transition ${
-                    activeSection === item
-                      ? "bg-lime-400 text-[#07100b]"
-                      : "border border-white/10 bg-white/[0.05] text-zinc-300 hover:border-lime-300/40 hover:text-lime-200"
-                  }`}
-                >
-                  {menuLabels[item] ?? item}
-                </button>
+                item.type === "single" ? (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => selectSection(item.section, item.params)}
+                    className={`h-12 rounded-lg px-4 text-left text-sm font-bold transition ${
+                      activeSection === item.section
+                        ? "bg-lime-400 text-[#07100b]"
+                        : "border border-white/10 bg-white/[0.05] text-zinc-300 hover:border-lime-300/40 hover:text-lime-200"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ) : (
+                  <div key={item.label} className="rounded-lg border border-white/10 bg-white/[0.03] p-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(item.label)}
+                      className={`flex h-11 w-full items-center justify-between rounded-md px-3 text-left text-sm font-bold transition ${
+                        activeSection === item.section ? "bg-lime-400 text-[#07100b]" : "text-zinc-300 hover:bg-white/[0.06] hover:text-lime-200"
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      <span>{expandedGroups[item.label] ? "-" : "+"}</span>
+                    </button>
+                    {expandedGroups[item.label] ? (
+                      <div className="mt-2 grid gap-1">
+                        {item.children.map((child) => (
+                          <button
+                            key={child.label}
+                            type="button"
+                            onClick={() => selectSection(child.section, child.params)}
+                            className="rounded-md px-3 py-2 text-left text-sm font-semibold text-zinc-400 transition hover:bg-lime-300/10 hover:text-lime-200"
+                          >
+                            {child.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                )
               ))}
               <button
                 type="button"
@@ -487,76 +760,143 @@ function DashboardHeader({
 }
 
 function AdminContent() {
+  const [dashboardMembers, setDashboardMembers] = useState<AdminDashboardMember[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, membership_plan, expiry_date")
+        .order("expiry_date", { ascending: true });
+
+      if (!active) {
+        return;
+      }
+
+      if (error) {
+        console.error("Failed to load dashboard members", error);
+        return;
+      }
+
+      setDashboardMembers((data ?? []).map((member) => mapDashboardMember(member as AdminDashboardMemberRow)));
+    }, 0);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  const totalMembers = dashboardMembers.length || 1;
+  const activeMembers = dashboardMembers.length
+    ? dashboardMembers.filter((member) => dashboardMemberStatus(member.expiryDate) === "Active").length
+    : 1;
+  const expiringSoonMembers = dashboardMembers
+    .filter((member) => dashboardMemberStatus(member.expiryDate) === "Expiring Soon")
+    .slice(0, 5);
+  const expiringFallback = expiringMemberships.slice(0, 5).map((member) => ({
+    id: member.name,
+    name: member.name,
+    plan: member.plan,
+    expiryDate: member.date,
+  }));
+  const expiringList = expiringSoonMembers.length ? expiringSoonMembers : expiringFallback;
+  const recentMembersList = dashboardMembers.slice(0, 5);
+  const recentMembersFallback = [
+    { id: "amit", name: "Amit", plan: "Annual", expiryDate: "2027-06-10" },
+  ];
+  const quickActions: { label: string; section: MainSection }[] = [
+    { label: "Add Member", section: "Members" },
+    { label: "Add Trainer", section: "Trainer" },
+    { label: "Open Business", section: "Payments" },
+    { label: "Open Settings", section: "Settings" },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 overflow-x-auto rounded-lg border border-white/10 bg-[#111713] p-2">
-        {adminMenu.map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={`shrink-0 rounded-md px-4 py-2 text-sm font-bold transition ${
-              item === "Dashboard"
-                ? "bg-lime-400 text-[#07100b]"
-                : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-            }`}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
+      <section className="rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black/20 sm:p-6">
+        <p className="text-sm font-bold uppercase tracking-[0.22em] text-lime-300">Admin Dashboard</p>
+        <h2 className="mt-3 text-3xl font-black tracking-normal text-white sm:text-4xl">Operational Overview</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+          A clean snapshot of memberships, trainers, and priority actions.
+        </p>
+      </section>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {adminStats.map((stat) => (
-          <StatCard key={stat.label} stat={stat} />
+        {[
+          { label: "Total Members", value: String(totalMembers), note: "Supabase" },
+          { label: "Active Members", value: String(activeMembers), note: "Current plans" },
+          { label: "Membership Expiring Soon", value: String(expiringSoonMembers.length), note: "Next 7 days" },
+          { label: "Active Trainers", value: "1", note: "Mock" },
+        ].map((stat) => (
+          <section key={stat.label} className="rounded-lg border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.025] p-5 shadow-2xl shadow-black/20">
+            <p className="text-sm font-medium text-zinc-400">{stat.label}</p>
+            <div className="mt-3 flex items-end justify-between gap-3">
+              <p className="text-3xl font-black tracking-normal text-white">{stat.value}</p>
+              <span className="rounded-md bg-lime-300/10 px-2.5 py-1 text-xs font-bold text-lime-200">{stat.note}</span>
+            </div>
+          </section>
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-        <Panel title="Recent Members" action="View all">
-          <div className="w-full max-w-full overflow-x-auto">
-            <table className="w-full min-w-[620px] text-left text-sm">
-              <thead className="text-xs uppercase tracking-[0.14em] text-zinc-500">
-                <tr className="border-b border-white/10">
-                  <th className="pb-3 font-bold">Name</th>
-                  <th className="pb-3 font-bold">Plan</th>
-                  <th className="pb-3 font-bold">Branch</th>
-                  <th className="pb-3 font-bold">Joined</th>
-                  <th className="pb-3 font-bold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10">
-                {recentMembers.map((member) => (
-                  <tr key={member.name} className="text-zinc-300">
-                    <td className="py-4 font-semibold text-white">{member.name}</td>
-                    <td className="py-4">{member.plan}</td>
-                    <td className="py-4">{member.branch}</td>
-                    <td className="py-4">{member.joined}</td>
-                    <td className="py-4">
-                      <StatusBadge>{member.status}</StatusBadge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Panel title="Membership Expiring Soon">
+          <div className="space-y-3">
+            {expiringList.map((member) => (
+              <div key={member.id} className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/[0.035] p-3">
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-white">{member.name}</p>
+                  <p className="mt-1 text-sm text-zinc-400">{member.plan}</p>
+                </div>
+                <p className="shrink-0 text-sm font-bold text-amber-200">{member.expiryDate}</p>
+              </div>
+            ))}
           </div>
         </Panel>
 
-        <Panel title="Expiring Memberships" action="Notify">
+        <Panel title="Recent Members">
           <div className="space-y-3">
-            {expiringMemberships.map((member) => (
-              <div
-                key={member.name}
-                className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/[0.035] p-3"
-              >
-                <div>
-                  <p className="font-bold text-white">{member.name}</p>
-                  <p className="mt-1 text-sm text-zinc-400">{member.plan}</p>
+            {(recentMembersList.length ? recentMembersList : recentMembersFallback).map((member) => (
+              <div key={member.id} className="grid gap-2 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-white">{member.name}</p>
+                  <p className="mt-1 text-zinc-400">{member.plan}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-amber-200">{member.days}</p>
-                  <p className="mt-1 text-xs text-zinc-500">{member.date}</p>
-                </div>
+                <p className="font-bold text-lime-200">{member.expiryDate}</p>
               </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <Panel title="Trainer Summary">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { label: "Total Trainers", value: "1" },
+              { label: "Active Trainers", value: "1" },
+              { label: "Assigned Members", value: String(totalMembers) },
+            ].map((item) => (
+              <div key={item.label} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">{item.label}</p>
+                <p className="mt-2 text-2xl font-black text-white">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="Quick Actions">
+          <div className="grid gap-3">
+            {quickActions.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("gymbuddy:navigate", { detail: action.section }))}
+                className="h-11 rounded-lg border border-white/10 bg-white/[0.05] px-4 text-left text-sm font-bold text-white transition hover:border-lime-300/40 hover:text-lime-200"
+              >
+                {action.label}
+              </button>
             ))}
           </div>
         </Panel>
@@ -764,7 +1104,7 @@ function TrainerProfileContent() {
   );
 }
 
-function HomeContent() {
+function HomeContent({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [activeSlide, setActiveSlide] = useState(0);
   const currentImage = heroImages[activeSlide];
   const homeActions = [
@@ -811,6 +1151,14 @@ function HomeContent() {
               The unified platform for gyms to manage operations, support trainers, and deliver a premium member experience.
             </p>
             <div id="start" className="mt-8 flex flex-wrap gap-3">
+              {isAuthenticated ? (
+                <a
+                  href="/dashboard"
+                  className="rounded-lg border border-lime-300/60 bg-lime-300/10 px-5 py-3 text-sm font-black text-lime-100 transition hover:bg-lime-300 hover:text-[#07100b]"
+                >
+                  Go to Dashboard
+                </a>
+              ) : null}
               {homeActions.map((action) => {
                 const className =
                   action.variant === "primary"
@@ -1646,49 +1994,62 @@ function MemberContent() {
   );
 }
 
-export default function Home() {
-  const initialRole: Role | null = typeof window !== "undefined" && window.location.pathname === "/dashboard" ? "admin" : role;
+export default function Home({ initialRole = role }: { initialRole?: Role | null }) {
   const [activeRole, setActiveRole] = useState<Role | null>(initialRole);
   const [activeSection, setActiveSection] = useState<MainSection>(
     initialRole === "trainer" ? "TrainerDashboard" : initialRole === "admin" ? "Admin" : initialRole === "member" ? "Members" : "Home",
   );
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [portalNotice, setPortalNotice] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
-  function handleLogin(nextRole: Role) {
-    if (nextRole === "trainer") {
-      setPortalNotice("Trainer Portal - Coming Soon");
-      setLoginOpen(true);
-      return;
+  useEffect(() => {
+    let active = true;
+
+    async function checkHomeSession() {
+      const { data } = await supabase.auth.getSession();
+
+      if (active) {
+        setIsAuthenticated(Boolean(data.session));
+      }
     }
 
-    if (nextRole === "member") {
-      setPortalNotice("Member Portal - Coming Soon");
-      setLoginOpen(true);
-      return;
-    }
+    checkHomeSession();
 
-    setActiveRole(nextRole);
-    setLoginOpen(false);
-    setPortalNotice(null);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(Boolean(session));
+    });
 
-    if (nextRole === "admin") {
-      setActiveSection("Admin");
-      window.history.pushState(null, "", "/dashboard");
-      return;
-    }
-  }
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   function handleSectionChange(section: MainSection) {
     setActiveSection(section);
   }
 
-  function handleLogout() {
+  useEffect(() => {
+    function handleQuickNavigate(event: Event) {
+      const section = (event as CustomEvent<MainSection>).detail;
+      setActiveSection(section);
+      window.history.pushState(null, "", `/dashboard?section=${encodeURIComponent(menuLabels[section] ?? section)}`);
+    }
+
+    window.addEventListener("gymbuddy:navigate", handleQuickNavigate);
+
+    return () => {
+      window.removeEventListener("gymbuddy:navigate", handleQuickNavigate);
+    };
+  }, []);
+
+  async function handleLogout() {
+    sessionStorage.setItem("gymbuddy:logout-home", "true");
+    await supabase.auth.signOut();
     setActiveRole(null);
     setActiveSection("Home");
-    setLoginOpen(false);
-    setPortalNotice(null);
-    window.history.pushState(null, "", "/");
+    setIsAuthenticated(false);
+    window.location.href = "/";
   }
 
   return (
@@ -1701,20 +2062,12 @@ export default function Home() {
           onLogout={handleLogout}
         />
       ) : (
-        <PublicHeader
-          loginOpen={loginOpen}
-          portalNotice={portalNotice}
-          onLoginToggle={() => {
-            setLoginOpen((open) => !open);
-            setPortalNotice(null);
-          }}
-          onLogin={handleLogin}
-        />
+        <PublicHeader isAuthenticated={isAuthenticated} onLoginClick={() => setLoginModalOpen(true)} />
       )}
 
       <div className="min-h-screen w-full max-w-full overflow-x-hidden">
         <div className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8">
-          {!activeRole ? <HomeContent /> : null}
+          {!activeRole ? <HomeContent isAuthenticated={isAuthenticated} /> : null}
           {activeRole === "admin" && activeSection === "Admin" ? <AdminContent /> : null}
           {activeRole === "admin" && activeSection === "Members" ? <MembersContent /> : null}
           {activeRole === "admin" && activeSection === "Payments" ? <PaymentsContent /> : null}
@@ -1731,6 +2084,7 @@ export default function Home() {
           ) : null}
         </div>
       </div>
+      {!activeRole && loginModalOpen ? <LoginModal onClose={() => setLoginModalOpen(false)} /> : null}
     </main>
   );
 }
