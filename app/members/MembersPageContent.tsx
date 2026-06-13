@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "../../lib/supabase";
+import { SUPABASE_DEBUG_URL, supabase } from "../../lib/supabase";
 
 type MemberStatus = "Active" | "Expired" | "Expiring Soon";
 type MemberFilter = "All" | MemberStatus;
 type SupabaseConnectionStatus = "checking" | "connected" | "error";
+type GymStatus = "checking" | "found" | "profile-missing" | "no-gym" | "missing" | "error";
 
 type Member = {
   id: number | string;
@@ -49,6 +50,36 @@ type SupabaseMemberRow = {
   expiryDate?: string | null;
 };
 
+type SupabaseGymRow = {
+  id: number | string;
+  name?: string | null;
+  slug?: string | null;
+  logo_url?: string | null;
+  theme_color?: string | null;
+};
+
+type SupabaseUserProfileRow = {
+  id?: number | string | null;
+  email?: string | null;
+  role?: string | null;
+  gym_id?: number | string | null;
+};
+
+type MembersDiagnostics = {
+  authUserId: string;
+  authUserEmail: string;
+  profileFound: boolean | null;
+  profileId: string;
+  profileEmail: string;
+  profileRole: string;
+  profileGymId: string;
+  gymFound: boolean | null;
+  gymId: string;
+  gymName: string;
+  gymSlug: string;
+  membersLoadedCount: number;
+};
+
 const filters: MemberFilter[] = ["All", "Active", "Expired", "Expiring Soon"];
 const plans = ["Annual", "Quarterly", "Monthly", "Strength Plus"];
 const branches = ["Noida", "Central", "Downtown", "West End"];
@@ -64,6 +95,21 @@ const emptyForm: MemberForm = {
   trainer: trainers[0],
   joinDate: "",
   expiryDate: "",
+};
+
+const emptyDiagnostics: MembersDiagnostics = {
+  authUserId: "",
+  authUserEmail: "",
+  profileFound: null,
+  profileId: "",
+  profileEmail: "",
+  profileRole: "",
+  profileGymId: "",
+  gymFound: null,
+  gymId: "",
+  gymName: "",
+  gymSlug: "",
+  membersLoadedCount: 0,
 };
 
 function dateOnly(date: Date) {
@@ -199,6 +245,18 @@ function memberFilterFromValue(value: string | null | undefined): MemberFilter {
   return "All";
 }
 
+function diagnosticValue(value: string) {
+  return value || "-";
+}
+
+function yesNo(value: boolean | null) {
+  if (value === null) {
+    return "Checking...";
+  }
+
+  return value ? "Yes" : "No";
+}
+
 export default function MembersPageContent() {
   const [members, setMembers] = useState<Member[]>([]);
   const [searchInput, setSearchInput] = useState("");
@@ -207,6 +265,12 @@ export default function MembersPageContent() {
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [membersError, setMembersError] = useState(false);
   const [supabaseStatus, setSupabaseStatus] = useState<SupabaseConnectionStatus>("checking");
+  const [gymId, setGymId] = useState<number | string | null>(null);
+  const [gymName, setGymName] = useState("");
+  const [gymStatus, setGymStatus] = useState<GymStatus>("checking");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<MembersDiagnostics>(emptyDiagnostics);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<number | string | null>(null);
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
@@ -217,21 +281,34 @@ export default function MembersPageContent() {
   const [deletingMember, setDeletingMember] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  const loadMembers = useCallback(async () => {
+  const loadMembers = useCallback(async (resolvedGymId: number | string | null) => {
     setLoadingMembers(true);
     setMembersError(false);
 
-    const { data, error } = await supabase.from("members").select("*");
+    if (!resolvedGymId) {
+      console.error("No gym is linked to this admin account.");
+      console.log("[MEMBERS]", { gymId: resolvedGymId, data: null, error: "Missing gym_id", count: 0 });
+      setMembers([]);
+      setDiagnostics((current) => ({ ...current, membersLoadedCount: 0 }));
+      setMembersError(false);
+      setLoadingMembers(false);
+      return;
+    }
+
+    const { data, error } = await supabase.from("members").select("*").eq("gym_id", resolvedGymId);
+    console.log("[MEMBERS]", { gymId: resolvedGymId, data, error, count: data?.length ?? 0 });
 
     if (error) {
       console.error("Failed to load members", error);
       setMembers([]);
+      setDiagnostics((current) => ({ ...current, membersLoadedCount: 0 }));
       setMembersError(true);
       setLoadingMembers(false);
       return;
     }
 
     setMembers((data ?? []).map((member) => mapSupabaseMember(member as SupabaseMemberRow)));
+    setDiagnostics((current) => ({ ...current, membersLoadedCount: data?.length ?? 0 }));
     setLoadingMembers(false);
   }, []);
 
@@ -255,9 +332,147 @@ export default function MembersPageContent() {
       setSupabaseStatus("connected");
     }
 
+    async function resolveAdminGym() {
+      setGymStatus("checking");
+      setGymId(null);
+      setGymName("");
+      setAdminEmail("");
+      setDiagnostics(emptyDiagnostics);
+      console.log("[SUPABASE_URL]", process.env.NEXT_PUBLIC_SUPABASE_URL);
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      console.log("[AUTH_USER]", user);
+
+      if (!active) {
+        return;
+      }
+
+      if (userError || !user) {
+        console.error("Failed to load logged-in admin user", userError);
+        setGymStatus("profile-missing");
+        setDiagnostics((current) => ({
+          ...current,
+          authUserId: user?.id || "",
+          authUserEmail: user?.email || "",
+          profileFound: false,
+        }));
+        setMembers([]);
+        setMembersError(false);
+        setLoadingMembers(false);
+        return;
+      }
+
+      setAdminEmail(user.email || "");
+      setDiagnostics((current) => ({
+        ...current,
+        authUserId: user.id,
+        authUserEmail: user.email || "",
+      }));
+
+      const { data: profile, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("id,email,role,gym_id")
+        .eq("id", user.id)
+        .single();
+      console.log("[USER_PROFILE]", profile, profileError);
+
+      if (!active) {
+        return;
+      }
+
+      if (profileError || !profile) {
+        console.error("Admin profile not configured.", profileError);
+        setGymStatus("profile-missing");
+        setDiagnostics((current) => ({ ...current, profileFound: false }));
+        setMembers([]);
+        setMembersError(false);
+        setLoadingMembers(false);
+        return;
+      }
+
+      const adminProfile = profile as SupabaseUserProfileRow;
+      const profileGymId = adminProfile.gym_id;
+      setAdminEmail(adminProfile.email || user.email || "");
+      setDiagnostics((current) => ({
+        ...current,
+        profileFound: true,
+        profileId: valueToString(adminProfile.id),
+        profileEmail: valueToString(adminProfile.email),
+        profileRole: valueToString(adminProfile.role),
+        profileGymId: valueToString(adminProfile.gym_id),
+      }));
+
+      if (!profileGymId) {
+        console.error("No gym is linked to this admin account.");
+        setGymStatus("no-gym");
+        setGymId(null);
+        setDiagnostics((current) => ({ ...current, gymFound: false }));
+        setMembers([]);
+        setMembersError(false);
+        setLoadingMembers(false);
+        return;
+      }
+
+      const { data: allGyms, error: allGymsError } = await supabase
+        .from("gyms")
+        .select("id,name,slug")
+        .limit(10);
+      console.log("[ALL_GYMS_VISIBLE_TO_APP]", allGyms, allGymsError);
+
+      if (!active) {
+        return;
+      }
+
+      console.log("[GYM_ID]", profileGymId);
+      const { data: gym, error: gymError } = await supabase
+        .from("gyms")
+        .select("id,name,slug,logo_url,theme_color")
+        .eq("id", profileGymId)
+        .maybeSingle();
+      console.log("[GYM_DATA]", gym);
+      console.log("[GYM_ERROR]", gymError);
+
+      if (!active) {
+        return;
+      }
+
+      if (gymError || !gym) {
+        console.error("Gym profile not configured.", { gymId: profileGymId, error: gymError });
+        setGymStatus("error");
+        setGymId(null);
+        setDiagnostics((current) => ({
+          ...current,
+          gymFound: false,
+          gymId: valueToString(profileGymId),
+          gymName: "",
+          gymSlug: "",
+        }));
+        setMembers([]);
+        setMembersError(false);
+        setLoadingMembers(false);
+        return;
+      }
+
+      const gymProfile = gym as SupabaseGymRow;
+      setGymId(gymProfile.id);
+      setGymName(gymProfile.name || "Gym");
+      setGymStatus("found");
+      setDiagnostics((current) => ({
+        ...current,
+        gymFound: true,
+        gymId: valueToString(gymProfile.id),
+        gymName: valueToString(gymProfile.name),
+        gymSlug: valueToString(gymProfile.slug),
+      }));
+      loadMembers(gymProfile.id);
+    }
+
     checkSupabaseConnection();
     const loadTimer = window.setTimeout(() => {
-      loadMembers();
+      resolveAdminGym();
     }, 0);
 
     return () => {
@@ -389,6 +604,13 @@ export default function MembersPageContent() {
     setSavingMember(true);
     setSaveError("");
 
+    if (!gymId) {
+      console.error("No gym is linked to this admin account.");
+      setSaveError("No gym is linked to this admin account.");
+      setSavingMember(false);
+      return;
+    }
+
     const memberPayload = {
       full_name: form.fullName.trim(),
       phone: form.phone.trim(),
@@ -402,7 +624,7 @@ export default function MembersPageContent() {
     };
 
     if (editingMemberId) {
-      const { error } = await supabase.from("members").update(memberPayload).eq("id", editingMemberId);
+      const { error } = await supabase.from("members").update(memberPayload).eq("id", editingMemberId).eq("gym_id", gymId);
 
       if (error) {
         console.error("Failed to update member", error);
@@ -412,12 +634,15 @@ export default function MembersPageContent() {
       }
 
       console.log("Member updated successfully");
-      await loadMembers();
+      await loadMembers(gymId);
       closeModal();
       return;
     }
 
-    const { error } = await supabase.from("members").insert(memberPayload);
+    const { error } = await supabase.from("members").insert({
+      ...memberPayload,
+      gym_id: gymId,
+    });
 
     if (error) {
       console.error("Failed to add member", error);
@@ -427,7 +652,7 @@ export default function MembersPageContent() {
     }
 
     console.log("Member added successfully");
-    await loadMembers();
+    await loadMembers(gymId);
     closeModal();
   }
 
@@ -439,7 +664,14 @@ export default function MembersPageContent() {
     setDeletingMember(true);
     setDeleteError("");
 
-    const { error } = await supabase.from("members").delete().eq("id", deleteTarget.id);
+    if (!gymId) {
+      console.error("No gym is linked to this admin account.");
+      setDeleteError("No gym is linked to this admin account.");
+      setDeletingMember(false);
+      return;
+    }
+
+    const { error } = await supabase.from("members").delete().eq("id", deleteTarget.id).eq("gym_id", gymId);
 
     if (error) {
       console.error("Failed to delete member", error);
@@ -449,7 +681,7 @@ export default function MembersPageContent() {
     }
 
     console.log("Member deleted successfully");
-    await loadMembers();
+    await loadMembers(gymId);
     setDeleteTarget(null);
     setDeletingMember(false);
   }
@@ -463,16 +695,44 @@ export default function MembersPageContent() {
     setSearchTerm("");
   }
 
-  const emptyMessage = members.length === 0 ? "No members found" : "No members match the current search.";
+  const emptyMessage = {
+    checking: "Loading members...",
+    found: members.length === 0 ? "No members found" : "No members match the current search.",
+    "profile-missing": "Admin profile not configured.",
+    "no-gym": "No gym is linked to this admin account.",
+    missing: "Gym profile not configured.",
+    error: "Gym profile not configured.",
+  }[gymStatus];
   const supabaseStatusLabel = {
     checking: "Supabase: Checking...",
-    connected: "Supabase: Connected ✅",
-    error: "Supabase: Error ❌",
+    connected: "Supabase: Connected",
+    error: "Supabase: Error",
   }[supabaseStatus];
   const supabaseStatusClass = {
     checking: "border-amber-300/30 bg-amber-300/10 text-amber-100",
     connected: "border-lime-300/30 bg-lime-300/10 text-lime-100",
     error: "border-red-300/25 bg-red-300/10 text-red-100",
+  }[supabaseStatus];
+  const gymStatusLabel = {
+    checking: "Gym: Checking...",
+    found: `Gym: ${gymName}`,
+    "profile-missing": "Admin profile not configured.",
+    "no-gym": "No gym is linked to this admin account.",
+    missing: "Gym profile not configured.",
+    error: "Gym profile not configured.",
+  }[gymStatus];
+  const gymStatusClass = {
+    checking: "border-amber-300/30 bg-amber-300/10 text-amber-100",
+    found: "border-lime-300/30 bg-lime-300/10 text-lime-100",
+    "profile-missing": "border-red-300/25 bg-red-300/10 text-red-100",
+    "no-gym": "border-red-300/25 bg-red-300/10 text-red-100",
+    missing: "border-red-300/25 bg-red-300/10 text-red-100",
+    error: "border-red-300/25 bg-red-300/10 text-red-100",
+  }[gymStatus];
+  const diagnosticsConnectionStatus = {
+    checking: "Supabase: Checking...",
+    connected: "Supabase Connected ✅",
+    error: "Supabase Error ❌",
   }[supabaseStatus];
 
   return (
@@ -484,8 +744,14 @@ export default function MembersPageContent() {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Manage gym members, plans, status, and renewals.</p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+          <span className="inline-flex h-8 max-w-full items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-bold text-zinc-300">
+            <span className="truncate">Logged in as: {adminEmail || "Checking..."}</span>
+          </span>
           <span className={`inline-flex h-8 items-center rounded-lg border px-3 text-xs font-bold ${supabaseStatusClass}`}>
             {supabaseStatusLabel}
+          </span>
+          <span className={`inline-flex h-8 items-center rounded-lg border px-3 text-xs font-bold ${gymStatusClass}`}>
+            {gymStatusLabel}
           </span>
           <button
             type="button"
@@ -495,6 +761,68 @@ export default function MembersPageContent() {
             Add Member
           </button>
         </div>
+      </section>
+
+      <section className="rounded-lg border border-white/10 bg-[#111713] shadow-2xl shadow-black/20">
+        <button
+          type="button"
+          onClick={() => setDiagnosticsOpen((current) => !current)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left sm:px-5"
+        >
+          <span className="text-sm font-black uppercase tracking-[0.18em] text-lime-300">Development Diagnostics</span>
+          <span className="text-sm font-bold text-zinc-400">{diagnosticsOpen ? "Hide" : "Show"}</span>
+        </button>
+        {diagnosticsOpen ? (
+          <div className="grid gap-4 border-t border-white/10 p-4 text-sm sm:grid-cols-2 lg:grid-cols-5 lg:p-5">
+            <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Auth User</p>
+              <dl className="mt-3 space-y-2 text-zinc-300">
+                <div><dt className="text-zinc-500">User ID</dt><dd className="break-all font-semibold text-white">{diagnosticValue(diagnostics.authUserId)}</dd></div>
+                <div><dt className="text-zinc-500">User Email</dt><dd className="break-all font-semibold text-white">{diagnosticValue(diagnostics.authUserEmail)}</dd></div>
+              </dl>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">User Profile Query</p>
+              <dl className="mt-3 space-y-2 text-zinc-300">
+                <div><dt className="text-zinc-500">Profile Found</dt><dd className="font-semibold text-white">{yesNo(diagnostics.profileFound)}</dd></div>
+                <div><dt className="text-zinc-500">Profile ID</dt><dd className="break-all font-semibold text-white">{diagnosticValue(diagnostics.profileId)}</dd></div>
+                <div><dt className="text-zinc-500">Profile Email</dt><dd className="break-all font-semibold text-white">{diagnosticValue(diagnostics.profileEmail)}</dd></div>
+                <div><dt className="text-zinc-500">Profile Role</dt><dd className="font-semibold text-white">{diagnosticValue(diagnostics.profileRole)}</dd></div>
+                <div><dt className="text-zinc-500">Profile Gym ID</dt><dd className="break-all font-semibold text-white">{diagnosticValue(diagnostics.profileGymId)}</dd></div>
+              </dl>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Gym Query</p>
+              <dl className="mt-3 space-y-2 text-zinc-300">
+                <div><dt className="text-zinc-500">Gym Found</dt><dd className="font-semibold text-white">{yesNo(diagnostics.gymFound)}</dd></div>
+                <div><dt className="text-zinc-500">Gym ID</dt><dd className="break-all font-semibold text-white">{diagnosticValue(diagnostics.gymId)}</dd></div>
+                <div><dt className="text-zinc-500">Gym Name</dt><dd className="font-semibold text-white">{diagnosticValue(diagnostics.gymName)}</dd></div>
+                <div><dt className="text-zinc-500">Gym Slug</dt><dd className="font-semibold text-white">{diagnosticValue(diagnostics.gymSlug)}</dd></div>
+              </dl>
+              {diagnostics.gymFound === false && diagnostics.profileGymId ? (
+                <p className="mt-3 rounded-md border border-amber-300/20 bg-amber-300/10 p-2 text-xs font-semibold text-amber-100">
+                  No gym row matched Profile Gym ID.
+                </p>
+              ) : null}
+            </div>
+            <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Members Query</p>
+              <dl className="mt-3 space-y-2 text-zinc-300">
+                <div><dt className="text-zinc-500">Members Loaded Count</dt><dd className="font-semibold text-white">{diagnostics.membersLoadedCount}</dd></div>
+              </dl>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Connection Status</p>
+              <p className="mt-3 font-semibold text-white">{diagnosticsConnectionStatus}</p>
+              <dl className="mt-3 space-y-2 text-zinc-300">
+                <div>
+                  <dt className="text-zinc-500">Supabase URL</dt>
+                  <dd className="break-all font-semibold text-white">{SUPABASE_DEBUG_URL || "-"}</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
