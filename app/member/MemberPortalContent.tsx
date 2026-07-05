@@ -813,14 +813,17 @@ export default function MemberPortalContent() {
     const firstName = firstNameFromProfile(profile);
 
     return (
-      <div className="space-y-3 md:space-y-6">
-        <Card className="p-4 md:p-5">
+      <div className="space-y-3 pt-1 md:space-y-6 md:pt-0">
+        <Card className="hidden p-4 md:block md:p-5">
           <p className="hidden text-sm font-bold uppercase tracking-[0.22em] text-lime-300 md:block">Member Dashboard</p>
           <h2 className="text-2xl font-black tracking-normal text-white md:mt-3 md:text-3xl">
             Hello, {firstName}
           </h2>
           <p className="mt-1 text-sm font-semibold text-zinc-400 md:text-base">Let&apos;s track today&apos;s progress.</p>
         </Card>
+        <div className="flex items-center justify-between md:hidden">
+          <h2 className="text-base font-black text-white">Quick Actions</h2>
+        </div>
         <div className="grid grid-cols-3 gap-2 md:grid-cols-1 md:gap-4 lg:grid-cols-3">
           {[
             { title: "Workout", icon: "+", subtitle: "Log today's training session.", target: "Add Workout" as MemberSection },
@@ -831,23 +834,23 @@ export default function MemberPortalContent() {
               key={card.title}
               type="button"
               onClick={() => setActiveSection(card.target)}
-              className="rounded-lg border border-lime-300/20 bg-lime-300/[0.08] p-3 text-left shadow-2xl shadow-black/20 transition hover:border-lime-300/50 hover:bg-lime-300/[0.12] md:p-5"
+              className="rounded-lg border border-lime-300/20 bg-lime-300/[0.08] p-2.5 text-left shadow-2xl shadow-black/20 transition hover:border-lime-300/50 hover:bg-lime-300/[0.12] md:p-5"
             >
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-lime-400 text-sm font-black text-[#07100b] md:h-9 md:w-9">{card.icon}</span>
-              <p className="mt-2 text-sm font-black text-white md:text-xl">Add {card.title}</p>
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-lime-400 text-xs font-black text-[#07100b] md:h-9 md:w-9 md:text-sm">{card.icon}</span>
+              <p className="mt-2 text-xs font-black text-white md:text-xl">Add {card.title}</p>
               <p className="mt-1 hidden text-sm leading-6 text-zinc-400 md:block">{card.subtitle}</p>
             </button>
           ))}
         </div>
         <div className="grid grid-cols-1 gap-3 md:gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <Card>
-            <h3 className="text-lg font-black text-white">Today&apos;s Status</h3>
-            <div className="mt-5 grid gap-4">
+            <h3 className="text-lg font-black text-white">Today</h3>
+            <div className="mt-3 grid gap-3 md:mt-5 md:gap-4">
               {[
                 { label: "Workout Logged", value: savedWorkouts.some((entry) => entry.date === todayDate) ? "Yes" : "No", progress: savedWorkouts.some((entry) => entry.date === todayDate) ? "100%" : "0%" },
                 { label: "Meals Tracked", value: `${todayMeals.length}/4`, progress: `${Math.min(todayMeals.length * 25, 100)}%` },
               ].map((item) => (
-                <div key={item.label} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+                <div key={item.label} className="rounded-lg border border-white/10 bg-white/[0.035] p-3 md:p-4">
                   <div className="flex items-center justify-between gap-4">
                     <p className="text-sm font-bold text-zinc-300">{item.label}</p>
                     <p className="text-sm font-black text-white">{item.value}</p>
@@ -861,7 +864,7 @@ export default function MemberPortalContent() {
           </Card>
           <Card>
             <h3 className="text-lg font-black text-white">Recent Activity</h3>
-            <div className="mt-5 grid gap-3">
+            <div className="mt-3 grid gap-3 md:mt-5">
               {recentPortalActivity.length ? recentPortalActivity.map((item) => (
                 <div key={`${item.action}-${item.time}`} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
                   <div className="flex items-start justify-between gap-4">
