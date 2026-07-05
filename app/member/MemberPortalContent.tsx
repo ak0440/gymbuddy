@@ -546,6 +546,8 @@ export default function MemberPortalContent() {
   }
 
   function addSelectedExercisesToSession() {
+    if (!selectedExerciseIds.length) return;
+
     const existingLibraryIds = new Set(workoutSession.exercises.map((exercise) => exercise.libraryId));
     const nextExercises = exerciseLibrary
       .filter((exercise) => selectedExerciseIds.includes(exercise.id) && !existingLibraryIds.has(exercise.id))
@@ -562,6 +564,14 @@ export default function MemberPortalContent() {
     setWorkoutSession((current) => ({ ...current, exercises: [...current.exercises, ...nextExercises] }));
     setSelectedExerciseIds([]);
     setExerciseModalOpen(false);
+  }
+
+  function openAddExerciseModal() {
+    setExerciseSearch("");
+    setEquipmentFilter("All Equipment");
+    setMuscleFilter("All Muscles");
+    setSelectedExerciseIds([]);
+    setExerciseModalOpen(true);
   }
 
   function updateWorkoutExercise(exerciseId: MemberPortalId, updates: Partial<WorkoutExercise>) {
@@ -903,7 +913,7 @@ export default function MemberPortalContent() {
               <Field label="Date"><input type="date" value={workoutSession.date} onChange={(event) => setWorkoutSession((current) => ({ ...current, date: event.target.value }))} className={inputClass()} /></Field>
               <div className="hidden md:block"><Field label="Notes"><input value={workoutSession.notes} onChange={(event) => setWorkoutSession((current) => ({ ...current, notes: event.target.value }))} placeholder="Session notes" className={inputClass()} /></Field></div>
             </div>
-            <button type="button" onClick={() => setExerciseModalOpen(true)} className="hidden h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] md:block">Add Exercise</button>
+            <button type="button" onClick={openAddExerciseModal} className="hidden h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] md:block">Add Exercise</button>
             <div className="md:hidden">
               <button type="button" onClick={() => setWorkoutNotesOpen((current) => !current)} className="text-sm font-black text-lime-300">
                 {workoutNotesOpen ? "Hide workout notes" : "Add workout notes"}
@@ -919,9 +929,9 @@ export default function MemberPortalContent() {
 
         <div className="grid gap-4">
           {workoutSession.exercises.length ? workoutSession.exercises.map((exercise) => (
-            <Card key={exercise.id}>
+            <Card key={exercise.id} className="relative">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
+                <div className="pr-11 md:pr-0">
                   <h3 className="text-lg font-black text-white md:text-xl">{exercise.name}</h3>
                   <p className="mt-1 text-sm font-semibold text-zinc-400">{exercise.muscle} - {exercise.equipment}</p>
                 </div>
@@ -929,15 +939,15 @@ export default function MemberPortalContent() {
                   <ActionButton onClick={() => duplicateWorkoutExercise(exercise)}>Duplicate</ActionButton>
                   <ActionButton tone="danger" onClick={() => removeWorkoutExercise(exercise.id)}>Remove</ActionButton>
                 </div>
-                <div className="relative md:hidden">
-                  <button type="button" onClick={() => setExerciseMenuId((current) => (String(current) === String(exercise.id) ? null : exercise.id))} className="absolute right-0 top-0 grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lg font-black text-zinc-300">
+                <div className="absolute right-3 top-3 md:hidden">
+                  <button type="button" onClick={() => setExerciseMenuId((current) => (String(current) === String(exercise.id) ? null : exercise.id))} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lg font-black text-zinc-300">
                     ...
                   </button>
                   {String(exerciseMenuId) === String(exercise.id) ? (
-                    <div className="absolute right-0 top-11 z-20 grid w-36 gap-1 rounded-lg border border-white/10 bg-[#0d120f] p-2 shadow-xl shadow-black">
-                      <button type="button" onClick={() => { setExerciseNoteId(exercise.id); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-zinc-200">Add Note</button>
-                      <button type="button" onClick={() => { duplicateWorkoutExercise(exercise); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-zinc-200">Duplicate</button>
-                      <button type="button" onClick={() => { removeWorkoutExercise(exercise.id); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-red-200">Remove</button>
+                    <div className="absolute right-0 top-11 z-20 grid w-40 gap-1 rounded-lg border border-[#dfe5d8] bg-white p-2 shadow-xl shadow-black/10">
+                      <button type="button" onClick={() => { setExerciseNoteId(exercise.id); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-[#172018]">Add Note</button>
+                      <button type="button" onClick={() => { duplicateWorkoutExercise(exercise); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-[#172018]">Duplicate Exercise</button>
+                      <button type="button" onClick={() => { removeWorkoutExercise(exercise.id); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-red-500">Remove Exercise</button>
                     </div>
                   ) : null}
                 </div>
@@ -951,23 +961,23 @@ export default function MemberPortalContent() {
                 </div>
               ) : null}
               <div className="mt-4 grid gap-2 md:mt-5">
-                <div className="grid grid-cols-[30px_minmax(48px,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_40px] gap-1 text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-500 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] md:gap-2 md:text-xs md:tracking-[0.12em]">
+                <div className="grid grid-cols-[28px_minmax(52px,0.85fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-1 text-[10px] font-bold uppercase tracking-[0.04em] text-zinc-500 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] md:gap-2 md:text-xs md:tracking-[0.12em]">
                   <span>Set</span>
                   <span className="md:hidden">Previous</span>
                   <span>Kg</span>
                   <span>Reps</span>
                   <span className="hidden md:inline">RPE</span>
-                  <span>Done</span>
+                  <span className="text-center md:text-left">✓</span>
                   <span className="hidden md:inline" />
                 </div>
                 {exercise.sets.map((set, index) => (
-                  <div key={set.id} className="grid grid-cols-[30px_minmax(48px,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_40px] items-center gap-1 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] md:gap-2">
+                  <div key={set.id} className="grid grid-cols-[28px_minmax(52px,0.85fr)_minmax(0,1fr)_minmax(0,1fr)_32px] items-center gap-1 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] md:gap-2">
                     <p className="text-sm font-black text-white">{index + 1}</p>
                     <p className="truncate text-xs font-semibold text-zinc-500 md:hidden">
                       {index > 0 ? `${exercise.sets[index - 1].weight || "-"}x${exercise.sets[index - 1].reps || "-"}` : "-"}
                     </p>
-                    <input inputMode="decimal" value={set.weight} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { weight: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-sm text-white outline-none focus:border-lime-300/60" />
-                    <input inputMode="numeric" value={set.reps} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { reps: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-sm text-white outline-none focus:border-lime-300/60" />
+                    <input inputMode="decimal" value={set.weight} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { weight: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-center text-sm text-white outline-none focus:border-lime-300/60 md:text-left" />
+                    <input inputMode="numeric" value={set.reps} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { reps: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-center text-sm text-white outline-none focus:border-lime-300/60 md:text-left" />
                     <input inputMode="decimal" value={set.rpe} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { rpe: event.target.value })} className="hidden h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-sm text-white outline-none focus:border-lime-300/60 md:block" />
                     <input type="checkbox" checked={set.completed} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { completed: event.target.checked })} className="h-5 w-5 justify-self-center accent-lime-400" />
                     <button type="button" onClick={() => removeSetFromExercise(exercise.id, set.id)} className="hidden h-9 rounded-lg border border-red-300/20 bg-red-300/10 text-xs font-black text-red-200 md:block">-</button>
@@ -982,9 +992,9 @@ export default function MemberPortalContent() {
         <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="hidden h-12 w-full rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60 md:block">
           {workoutSaving ? "Saving..." : "Save Workout"}
         </button>
-        <div className="fixed inset-x-0 bottom-[calc(4.65rem+env(safe-area-inset-bottom))] z-30 grid grid-cols-2 gap-2 border-t border-white/10 bg-[#0b0f0d]/95 px-3 py-2 backdrop-blur-xl md:hidden">
-          <button type="button" onClick={() => setExerciseModalOpen(true)} className="h-11 rounded-lg border border-lime-300/30 bg-lime-300/10 text-sm font-black text-lime-100">+ Add Exercise</button>
-          <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="h-11 rounded-lg bg-lime-400 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60">
+        <div className="member-mobile-actionbar fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 grid grid-cols-2 gap-2 border-t border-white/10 bg-[#0b0f0d]/95 px-3 py-1.5 backdrop-blur-xl md:hidden">
+          <button type="button" onClick={openAddExerciseModal} className="h-10 rounded-lg border border-lime-300/30 bg-lime-300/10 text-sm font-black text-lime-100">+ Exercise</button>
+          <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="h-10 rounded-lg bg-lime-400 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60">
             {workoutSaving ? "Saving..." : "Finish Workout"}
           </button>
         </div>
@@ -1044,10 +1054,20 @@ export default function MemberPortalContent() {
               <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#101511] px-4">
                 <button type="button" onClick={() => { setSelectedExerciseIds([]); setExerciseModalOpen(false); }} className="text-sm font-black text-zinc-300">Cancel</button>
                 <h2 className="text-base font-black text-white">Add Exercise</h2>
-                <button type="button" onClick={addSelectedExercisesToSession} className="text-sm font-black text-lime-300">Create</button>
+                <button type="button" onClick={addSelectedExercisesToSession} disabled={!selectedExerciseIds.length} className="text-sm font-black text-lime-300 disabled:cursor-not-allowed disabled:text-zinc-500">
+                  {selectedExerciseIds.length ? `Add (${selectedExerciseIds.length})` : "Add"}
+                </button>
               </header>
               <div className="shrink-0 space-y-3 border-b border-white/10 p-4">
-                <input value={exerciseSearch} onChange={(event) => setExerciseSearch(event.target.value)} placeholder="Search exercise" className={inputClass()} />
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">Search</span>
+                  <input value={exerciseSearch} onChange={(event) => setExerciseSearch(event.target.value)} placeholder="Exercise name" className={`${inputClass()} pl-16 pr-10`} />
+                  {exerciseSearch ? (
+                    <button type="button" onClick={() => setExerciseSearch("")} className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-md text-sm font-black text-zinc-500">
+                      x
+                    </button>
+                  ) : null}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <select value={equipmentFilter} onChange={(event) => setEquipmentFilter(event.target.value)} className={inputClass()}>{equipmentFilters.map((filter) => <option key={filter}>{filter}</option>)}</select>
                   <select value={muscleFilter} onChange={(event) => setMuscleFilter(event.target.value)} className={inputClass()}>{muscleFilters.map((filter) => <option key={filter}>{filter}</option>)}</select>
@@ -1374,7 +1394,65 @@ export default function MemberPortalContent() {
   }
 
   return (
-    <div className="grid gap-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:gap-5 md:pb-0 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="member-mobile-theme grid gap-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:gap-5 md:pb-0 lg:grid-cols-[240px_minmax(0,1fr)]">
+      <style jsx global>{`
+        @media (max-width: 767px) {
+          .member-mobile-theme {
+            background: #f6f7f4;
+            color: #172018;
+          }
+
+          .member-mobile-theme section[class*="bg-[#111713]"],
+          .member-mobile-theme section[class*="bg-[#101511]"],
+          .member-mobile-theme article,
+          .member-mobile-theme div[class*="bg-white/[0.035]"] {
+            background: #ffffff !important;
+            border-color: #e2e7dc !important;
+            box-shadow: none !important;
+          }
+
+          .member-mobile-theme header[class*="bg-[#0a0d0b]"],
+          .member-mobile-theme header[class*="bg-[#101511]"],
+          .member-mobile-theme .member-mobile-bottom-nav,
+          .member-mobile-theme .member-mobile-actionbar {
+            background: rgba(255, 255, 255, 0.96) !important;
+            border-color: #dfe5d8 !important;
+            box-shadow: 0 -10px 24px rgba(23, 32, 24, 0.08);
+          }
+
+          .member-mobile-theme .text-white {
+            color: #172018 !important;
+          }
+
+          .member-mobile-theme .text-zinc-300,
+          .member-mobile-theme .text-zinc-400,
+          .member-mobile-theme .text-zinc-500,
+          .member-mobile-theme .text-zinc-600 {
+            color: #657064 !important;
+          }
+
+          .member-mobile-theme input,
+          .member-mobile-theme textarea,
+          .member-mobile-theme select {
+            background: #f1f3ef !important;
+            border-color: #dfe5d8 !important;
+            color: #172018 !important;
+          }
+
+          .member-mobile-theme input::placeholder,
+          .member-mobile-theme textarea::placeholder {
+            color: #8a9487 !important;
+          }
+
+          .member-mobile-theme div[class*="bg-black/20"],
+          .member-mobile-theme div[class*="bg-black/25"],
+          .member-mobile-theme div[class*="bg-white/[0.04]"],
+          .member-mobile-theme div[class*="bg-white/[0.05]"] {
+            background: #f1f3ef !important;
+            border-color: #dfe5d8 !important;
+          }
+        }
+      `}</style>
       <header className="sticky top-0 z-30 -mx-4 flex h-16 items-center justify-between border-b border-white/10 bg-[#0a0d0b]/95 px-4 backdrop-blur-xl md:hidden">
         <div className="flex min-w-0 items-center gap-3">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-lime-400 text-sm font-black text-[#07100b]">GB</span>
@@ -1420,7 +1498,7 @@ export default function MemberPortalContent() {
         </div>
         {renderActiveSection()}
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0b0f0d]/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden">
+      <nav className="member-mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0b0f0d]/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden">
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
           {mobilePrimaryNavigation.map((item) => {
             const active = activeSection === item.section;
