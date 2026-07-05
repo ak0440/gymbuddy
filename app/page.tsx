@@ -11,7 +11,7 @@ import MemberPortalContent from "./member/MemberPortalContent";
 import { supabase } from "../lib/supabase";
 
 type Role = "admin" | "member" | "trainer";
-type LoginRole = "admin" | "member";
+type LoginRole = "member";
 type MainSection =
   | "Home"
   | "Admin"
@@ -391,7 +391,7 @@ function PublicHeader({
               onClick={onLoginClick}
               className="rounded-lg bg-lime-400 px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-300"
             >
-              Partner Login
+              Member Login
             </button>
           )}
           <a
@@ -409,7 +409,7 @@ function PublicHeader({
 function LoginModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedLoginRole, setSelectedLoginRole] = useState<LoginRole>("admin");
+  const [selectedLoginRole] = useState<LoginRole>("member");
   const [errorMessage, setErrorMessage] = useState("");
   const [portalNotice, setPortalNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -456,9 +456,9 @@ function LoginModal({ onClose }: { onClose: () => void }) {
     window.location.href = "/dashboard";
   }
 
-  function showTrainerComingSoon() {
+  function showPortalComingSoon(roleLabel: "Admin" | "Trainer") {
     setErrorMessage("");
-    setPortalNotice("Trainer portal coming soon");
+    setPortalNotice(`${roleLabel} portal coming soon`);
   }
 
   return (
@@ -467,9 +467,9 @@ function LoginModal({ onClose }: { onClose: () => void }) {
       <section className="relative w-full max-w-md rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.22em] text-lime-300">Partner Login</p>
-            <h2 className="mt-2 text-2xl font-black text-white">Partner Login</h2>
-            <p className="mt-1 text-sm text-zinc-400">Access your gym management workspace.</p>
+            <p className="text-sm font-bold uppercase tracking-[0.22em] text-lime-300">Member Login</p>
+            <h2 className="mt-2 text-2xl font-black text-white">Member Login</h2>
+            <p className="mt-1 text-sm text-zinc-400">Access your fitness workspace.</p>
           </div>
           <button
             type="button"
@@ -524,26 +524,26 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         </button>
 
         <div className="mt-5 grid gap-2 sm:grid-cols-3">
-          {(["admin", "member"] as LoginRole[]).map((loginRole) => (
-            <button
-              key={loginRole}
-              type="button"
-              onClick={() => {
-                setSelectedLoginRole(loginRole);
-                setPortalNotice("");
-              }}
-              className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm font-bold transition ${
-                selectedLoginRole === loginRole
-                  ? "border-lime-300/40 bg-lime-300/10 text-lime-100"
-                  : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-lime-300/30 hover:text-lime-200"
-              }`}
-            >
-              <span>{loginRole === "admin" ? "Admin" : "Member"}</span>
-            </button>
-          ))}
           <button
             type="button"
-            onClick={showTrainerComingSoon}
+            onClick={() => showPortalComingSoon("Admin")}
+            className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-bold text-zinc-400"
+          >
+            <span>Admin</span>
+            <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-lime-200">
+              Coming Soon
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPortalNotice("")}
+            className="flex items-center justify-between gap-3 rounded-lg border border-lime-300/40 bg-lime-300/10 px-3 py-2 text-sm font-bold text-lime-100"
+          >
+            <span>Member</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => showPortalComingSoon("Trainer")}
             className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-bold text-zinc-400"
           >
             <span>Trainer</span>
@@ -2004,8 +2004,7 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
     }
 
     const timer = window.setTimeout(() => {
-      const storedRole = localStorage.getItem(loginRoleStorageKey);
-      const resolvedRole: Role = storedRole === "member" ? "member" : "admin";
+      const resolvedRole: Role = "member";
       setActiveRole(resolvedRole);
       setActiveSection(defaultSectionForRole(resolvedRole));
       setRoleReady(true);

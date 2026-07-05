@@ -1,8 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEMO_MEMBER_ID } from "../../lib/memberPortalMockContext";
-import { getCurrentAdminGym, getFirstGymMemberProfile, getMemberProfile, saveMemberProfile, type MemberPortalId, type MemberProfile } from "../../lib/memberPortalApi";
+import {
+  addWorkoutSession,
+  deleteWorkoutSession,
+  getCurrentAdminGym,
+  getFirstGymMemberProfile,
+  getMemberProfile,
+  getWorkoutSessions,
+  saveMemberProfile,
+  type MemberPortalId,
+  type MemberProfile,
+  type WorkoutSessionWithDetails,
+} from "../../lib/memberPortalApi";
 
 type MemberSection = "Dashboard" | "Add Workout" | "Meal Log" | "Progress" | "Progress Photos" | "Membership" | "Profile" | "Support";
 type MealType = "Breakfast" | "Lunch" | "Dinner" | "Snacks" | "Pre Workout" | "Post Workout";
@@ -19,7 +30,7 @@ type ExerciseLibraryItem = {
 };
 
 type WorkoutSet = {
-  id: number;
+  id: MemberPortalId;
   weight: string;
   reps: string;
   rpe: string;
@@ -27,7 +38,7 @@ type WorkoutSet = {
 };
 
 type WorkoutExercise = {
-  id: number;
+  id: MemberPortalId;
   libraryId: number;
   name: string;
   muscle: string;
@@ -37,7 +48,7 @@ type WorkoutExercise = {
 };
 
 type WorkoutSession = {
-  id: number;
+  id: MemberPortalId;
   name: string;
   type: string;
   date: string;
@@ -343,9 +354,40 @@ function calculateTotalVolume(exercises: WorkoutExercise[]) {
   );
 }
 
+function mapWorkoutSessionFromSupabase(row: WorkoutSessionWithDetails): WorkoutSession {
+  return {
+    id: row.id,
+    name: row.workout_name ?? "Workout",
+    type: row.workout_type ?? "Training",
+    date: row.workout_date,
+    notes: row.notes ?? "",
+    expanded: false,
+    exercises: row.exercises.map((exercise) => ({
+      id: exercise.id,
+      libraryId: Number(exercise.id),
+      name: exercise.exercise_name,
+      muscle: exercise.muscle ?? "General",
+      equipment: exercise.equipment ?? "Other",
+      notes: exercise.notes ?? "",
+      sets: exercise.sets.map((set) => ({
+        id: set.id,
+        weight: set.weight === null ? "" : String(set.weight),
+        reps: set.reps === null ? "" : String(set.reps),
+        rpe: set.rpe === null ? "" : String(set.rpe),
+        completed: Boolean(set.completed),
+      })),
+    })),
+  };
+}
+
 export default function MemberPortalContent() {
   const [activeSection, setActiveSection] = useState<MemberSection>("Dashboard");
   const [savedWorkouts, setSavedWorkouts] = useState<WorkoutSession[]>([]);
+  const [workoutsLoading, setWorkoutsLoading] = useState(false);
+  const [workoutSaving, setWorkoutSaving] = useState(false);
+  const [workoutDeletingId, setWorkoutDeletingId] = useState<MemberPortalId | null>(null);
+  const [workoutError, setWorkoutError] = useState("");
+  const [workoutSuccess, setWorkoutSuccess] = useState("");
   const [workoutSession, setWorkoutSession] = useState<Omit<WorkoutSession, "id" | "expanded">>(emptyWorkoutSession);
   const [exerciseModalOpen, setExerciseModalOpen] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState("");
@@ -413,6 +455,24 @@ export default function MemberPortalContent() {
     return [...workoutItems, ...mealItems, ...progressItems, ...photoItems].sort((a, b) => Number(b.id) - Number(a.id)).slice(0, 3);
   }, [meals, photos, progressEntries, savedWorkouts]);
 
+  const loadWorkoutHistory = useCallback(async (gymId: MemberPortalId, memberId: MemberPortalId) => {
+    setWorkoutsLoading(true);
+    setWorkoutError("");
+
+    const { data, error } = await getWorkoutSessions(gymId, memberId);
+
+    if (error) {
+      console.error("[MemberPortal] Failed to load workout history", error);
+      setWorkoutError("Could not load workout history.");
+      setSavedWorkouts([]);
+      setWorkoutsLoading(false);
+      return;
+    }
+
+    setSavedWorkouts((data ?? []).map(mapWorkoutSessionFromSupabase));
+    setWorkoutsLoading(false);
+  }, []);
+
   useEffect(() => {
     let active = true;
     const timer = window.setTimeout(async () => {
@@ -448,8 +508,10 @@ export default function MemberPortalContent() {
       if (profileResult.data) {
         setProfileMemberId(profileResult.data.id);
         setProfile(profileFromRow(profileResult.data));
+        await loadWorkoutHistory(gymResult.data.gym_id, profileResult.data.id);
       } else {
         setProfileMemberId(null);
+        setSavedWorkouts([]);
       }
 
       setProfileLoading(false);
@@ -459,7 +521,7 @@ export default function MemberPortalContent() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [loadWorkoutHistory]);
 
   function toggleExerciseSelection(exerciseId: number) {
     setSelectedExerciseIds((current) => (current.includes(exerciseId) ? current.filter((id) => id !== exerciseId) : [...current, exerciseId]));
@@ -484,38 +546,38 @@ export default function MemberPortalContent() {
     setExerciseModalOpen(false);
   }
 
-  function updateWorkoutExercise(exerciseId: number, updates: Partial<WorkoutExercise>) {
+  function updateWorkoutExercise(exerciseId: MemberPortalId, updates: Partial<WorkoutExercise>) {
     setWorkoutSession((current) => ({
       ...current,
-      exercises: current.exercises.map((exercise) => (exercise.id === exerciseId ? { ...exercise, ...updates } : exercise)),
+      exercises: current.exercises.map((exercise) => (String(exercise.id) === String(exerciseId) ? { ...exercise, ...updates } : exercise)),
     }));
   }
 
-  function updateWorkoutSet(exerciseId: number, setId: number, updates: Partial<WorkoutSet>) {
+  function updateWorkoutSet(exerciseId: MemberPortalId, setId: MemberPortalId, updates: Partial<WorkoutSet>) {
     setWorkoutSession((current) => ({
       ...current,
       exercises: current.exercises.map((exercise) =>
-        exercise.id === exerciseId
-          ? { ...exercise, sets: exercise.sets.map((set) => (set.id === setId ? { ...set, ...updates } : set)) }
+        String(exercise.id) === String(exerciseId)
+          ? { ...exercise, sets: exercise.sets.map((set) => (String(set.id) === String(setId) ? { ...set, ...updates } : set)) }
           : exercise,
       ),
     }));
   }
 
-  function addSetToExercise(exerciseId: number) {
+  function addSetToExercise(exerciseId: MemberPortalId) {
     setWorkoutSession((current) => ({
       ...current,
       exercises: current.exercises.map((exercise) =>
-        exercise.id === exerciseId ? { ...exercise, sets: [...exercise.sets, { id: Date.now(), weight: "", reps: "", rpe: "", completed: false }] } : exercise,
+        String(exercise.id) === String(exerciseId) ? { ...exercise, sets: [...exercise.sets, { id: Date.now(), weight: "", reps: "", rpe: "", completed: false }] } : exercise,
       ),
     }));
   }
 
-  function removeSetFromExercise(exerciseId: number, setId: number) {
+  function removeSetFromExercise(exerciseId: MemberPortalId, setId: MemberPortalId) {
     setWorkoutSession((current) => ({
       ...current,
       exercises: current.exercises.map((exercise) =>
-        exercise.id === exerciseId ? { ...exercise, sets: exercise.sets.filter((set) => set.id !== setId) } : exercise,
+        String(exercise.id) === String(exerciseId) ? { ...exercise, sets: exercise.sets.filter((set) => String(set.id) !== String(setId)) } : exercise,
       ),
     }));
   }
@@ -534,23 +596,98 @@ export default function MemberPortalContent() {
     }));
   }
 
-  function removeWorkoutExercise(exerciseId: number) {
-    setWorkoutSession((current) => ({ ...current, exercises: current.exercises.filter((exercise) => exercise.id !== exerciseId) }));
+  function removeWorkoutExercise(exerciseId: MemberPortalId) {
+    setWorkoutSession((current) => ({ ...current, exercises: current.exercises.filter((exercise) => String(exercise.id) !== String(exerciseId)) }));
   }
 
-  function saveWorkoutSession() {
+  async function resolveWorkoutScope() {
+    const resolvedGymId = profileGymId ?? (await getCurrentAdminGym()).data?.gym_id ?? null;
+
+    if (!resolvedGymId) {
+      return { gymId: null, memberId: null };
+    }
+
+    const resolvedMemberId = profileMemberId ?? (await getMemberProfile(resolvedGymId, DEMO_MEMBER_ID)).data?.id ?? (await getFirstGymMemberProfile(resolvedGymId)).data?.id ?? null;
+    return { gymId: resolvedGymId, memberId: resolvedMemberId };
+  }
+
+  async function saveWorkoutSession() {
     if (!workoutSession.exercises.length) return;
-    const savedSession: WorkoutSession = {
-      id: Date.now(),
-      name: workoutSession.name.trim() || "Workout",
-      type: workoutSession.type.trim() || "Training",
-      date: workoutSession.date,
-      notes: workoutSession.notes,
-      exercises: workoutSession.exercises,
-      expanded: false,
-    };
-    setSavedWorkouts((current) => [savedSession, ...current]);
+
+    setWorkoutSaving(true);
+    setWorkoutError("");
+    setWorkoutSuccess("");
+
+    const { gymId, memberId } = await resolveWorkoutScope();
+
+    if (!gymId || !memberId) {
+      setWorkoutError("Workout storage is not connected yet.");
+      setWorkoutSaving(false);
+      return;
+    }
+
+    const { error } = await addWorkoutSession({
+      gym_id: gymId,
+      member_id: memberId,
+      workout_name: workoutSession.name.trim() || "Workout",
+      workout_type: workoutSession.type.trim() || "Training",
+      workout_date: workoutSession.date,
+      notes: workoutSession.notes.trim() || null,
+      exercises: workoutSession.exercises.map((exercise) => ({
+        exercise_name: exercise.name,
+        muscle: exercise.muscle,
+        equipment: exercise.equipment,
+        notes: exercise.notes.trim() || null,
+        sets: exercise.sets.map((set, index) => ({
+          set_number: index + 1,
+          weight: numberOrNull(set.weight),
+          reps: numberOrNull(set.reps),
+          rpe: numberOrNull(set.rpe),
+          completed: set.completed,
+        })),
+      })),
+    });
+
+    if (error) {
+      console.error("[MemberPortal] Failed to save workout", error);
+      setWorkoutError("Could not save workout. Please try again.");
+      setWorkoutSaving(false);
+      return;
+    }
+
+    setProfileGymId(gymId);
+    setProfileMemberId(memberId);
+    await loadWorkoutHistory(gymId, memberId);
     setWorkoutSession(emptyWorkoutSession);
+    setWorkoutSuccess("Workout saved successfully.");
+    setWorkoutSaving(false);
+  }
+
+  async function removeSavedWorkout(sessionId: MemberPortalId) {
+    setWorkoutDeletingId(sessionId);
+    setWorkoutError("");
+    setWorkoutSuccess("");
+
+    const { gymId, memberId } = await resolveWorkoutScope();
+
+    if (!gymId || !memberId) {
+      setWorkoutError("Workout storage is not connected yet.");
+      setWorkoutDeletingId(null);
+      return;
+    }
+
+    const { error } = await deleteWorkoutSession(sessionId, gymId, memberId);
+
+    if (error) {
+      console.error("[MemberPortal] Failed to delete workout", error);
+      setWorkoutError("Could not delete workout. Please try again.");
+      setWorkoutDeletingId(null);
+      return;
+    }
+
+    await loadWorkoutHistory(gymId, memberId);
+    setWorkoutSuccess("Workout deleted.");
+    setWorkoutDeletingId(null);
   }
 
   function saveMeal() {
@@ -727,6 +864,13 @@ export default function MemberPortalContent() {
           <MiniMetric label="Completed" value={String(currentCompletedSets)} />
         </div>
 
+        {workoutError ? (
+          <p className="rounded-lg border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-semibold text-red-100">{workoutError}</p>
+        ) : null}
+        {workoutSuccess ? (
+          <p className="rounded-lg border border-lime-300/20 bg-lime-300/10 px-4 py-3 text-sm font-semibold text-lime-100">{workoutSuccess}</p>
+        ) : null}
+
         <Card>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px] lg:items-end">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -780,24 +924,43 @@ export default function MemberPortalContent() {
           )) : <EmptyState text="No exercises selected yet. Add exercises to build your workout." />}
         </div>
 
-        <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length} className="h-12 w-full rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60">Save Workout</button>
+        <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="h-12 w-full rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60">
+          {workoutSaving ? "Saving..." : "Save Workout"}
+        </button>
 
         <Card>
           <h2 className="text-xl font-black text-white">Workout History</h2>
           <div className="mt-5 grid gap-3">
-            {savedWorkouts.length ? savedWorkouts.map((session) => (
+            {workoutsLoading ? <EmptyState text="Loading workout history..." /> : null}
+            {!workoutsLoading && savedWorkouts.length ? savedWorkouts.map((session) => (
               <div key={session.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <button
-                  type="button"
-                  onClick={() => setSavedWorkouts((current) => current.map((item) => (item.id === session.id ? { ...item, expanded: !item.expanded } : item)))}
-                  className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-start sm:justify-between"
-                >
-                  <span>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setSavedWorkouts((current) => current.map((item) => (String(item.id) === String(session.id) ? { ...item, expanded: !item.expanded } : item)))}
+                    className="min-w-0 flex-1 text-left"
+                  >
                     <span className="block font-black text-white">{session.name}</span>
                     <span className="mt-1 block text-sm text-zinc-400">{session.date} - {session.exercises.length} exercises - {calculateTotalSets(session.exercises)} sets - {calculateTotalVolume(session.exercises)} kg</span>
-                  </span>
-                  <span className="text-sm font-black text-lime-200">{session.expanded ? "Hide" : "View"}</span>
-                </button>
+                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSavedWorkouts((current) => current.map((item) => (String(item.id) === String(session.id) ? { ...item, expanded: !item.expanded } : item)))}
+                      className="rounded-md border border-lime-300/20 bg-lime-300/10 px-3 py-2 text-xs font-black text-lime-100"
+                    >
+                      {session.expanded ? "Hide" : "View"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeSavedWorkout(session.id)}
+                      disabled={String(workoutDeletingId) === String(session.id)}
+                      className="rounded-md border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-black text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {String(workoutDeletingId) === String(session.id) ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
+                </div>
                 {session.expanded ? (
                   <div className="mt-4 grid gap-3 border-t border-white/10 pt-4">
                     {session.exercises.map((exercise) => (
@@ -809,7 +972,8 @@ export default function MemberPortalContent() {
                   </div>
                 ) : null}
               </div>
-            )) : <EmptyState text="No saved workouts yet." />}
+            )) : null}
+            {!workoutsLoading && !savedWorkouts.length ? <EmptyState text="No saved workouts yet." /> : null}
           </div>
         </Card>
 
@@ -846,7 +1010,7 @@ export default function MemberPortalContent() {
                           <span className="block truncate font-black text-white">{exercise.name}</span>
                           <span className="mt-1 block text-sm text-zinc-400">{exercise.muscle} - {exercise.equipment}</span>
                         </span>
-                        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border text-sm font-black ${selected ? "border-lime-300 bg-lime-400 text-[#07100b]" : "border-white/10 text-zinc-400"}`}>{selected ? "✓" : "+"}</span>
+                        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border text-xs font-black ${selected ? "border-lime-300 bg-lime-400 text-[#07100b]" : "border-white/10 text-zinc-400"}`}>{selected ? "OK" : "+"}</span>
                       </button>
                     );
                   })}

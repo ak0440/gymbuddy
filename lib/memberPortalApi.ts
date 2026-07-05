@@ -6,6 +6,15 @@ Required Supabase tables for future Member Portal persistence:
 member_workouts:
 id, gym_id, member_id, workout_date, workout_type, exercise_name, sets, reps, weight, notes, created_at
 
+workout_sessions:
+id, gym_id, member_id, workout_name, workout_type, workout_date, notes, created_at
+
+workout_session_exercises:
+id, session_id, gym_id, member_id, exercise_name, muscle, equipment, notes, sort_order, created_at
+
+workout_sets:
+id, session_id, session_exercise_id, gym_id, member_id, set_number, weight, reps, rpe, completed, created_at
+
 member_meals:
 id, gym_id, member_id, meal_date, meal_time, meal_type, food_name, quantity, calories, protein, notes, created_at
 
@@ -39,6 +48,72 @@ export type MemberWorkout = {
   weight: number | null;
   notes: string | null;
   created_at: string;
+};
+
+export type WorkoutSessionRow = {
+  id: MemberPortalId;
+  gym_id: MemberPortalId;
+  member_id: MemberPortalId;
+  workout_name: string | null;
+  workout_type: string | null;
+  workout_date: string;
+  notes: string | null;
+  created_at: string;
+};
+
+export type WorkoutSessionExerciseRow = {
+  id: MemberPortalId;
+  session_id: MemberPortalId;
+  gym_id: MemberPortalId;
+  member_id: MemberPortalId;
+  exercise_name: string;
+  muscle: string | null;
+  equipment: string | null;
+  notes: string | null;
+  sort_order: number | null;
+  created_at: string;
+};
+
+export type WorkoutSetRow = {
+  id: MemberPortalId;
+  session_id: MemberPortalId;
+  session_exercise_id: MemberPortalId;
+  gym_id: MemberPortalId;
+  member_id: MemberPortalId;
+  set_number: number;
+  weight: number | null;
+  reps: number | null;
+  rpe: number | null;
+  completed: boolean | null;
+  created_at: string;
+};
+
+export type WorkoutSessionExercisePayload = {
+  exercise_name: string;
+  muscle: string | null;
+  equipment: string | null;
+  notes: string | null;
+  sets: Array<{
+    set_number: number;
+    weight: number | null;
+    reps: number | null;
+    rpe: number | null;
+    completed: boolean;
+  }>;
+};
+
+export type WorkoutSessionPayload = {
+  gym_id: MemberPortalId;
+  member_id: MemberPortalId;
+  workout_name: string;
+  workout_type: string;
+  workout_date: string;
+  notes: string | null;
+  exercises: WorkoutSessionExercisePayload[];
+};
+
+export type WorkoutSessionWithDetails = WorkoutSessionRow & {
+  exercises: Array<WorkoutSessionExerciseRow & { sets: WorkoutSetRow[] }>;
 };
 
 export type MemberMeal = {
@@ -256,6 +331,160 @@ export async function deleteMemberWorkout(id: MemberPortalId, gymId: MemberPorta
   const { error } = await supabase.from("member_workouts").delete().eq("id", id).eq("gym_id", gymId).eq("member_id", memberId);
 
   logApiError("Failed to delete member workout", error);
+  return { data: null, error };
+}
+
+export async function getWorkoutSessions(gymId: MemberPortalId, memberId: MemberPortalId): Promise<MemberPortalApiResult<WorkoutSessionWithDetails[]>> {
+  const { data: sessions, error: sessionsError } = await supabase
+    .from("workout_sessions")
+    .select("*")
+    .eq("gym_id", gymId)
+    .eq("member_id", memberId)
+    .order("workout_date", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (sessionsError) {
+    logApiError("Failed to get workout sessions", sessionsError);
+    return { data: null, error: sessionsError };
+  }
+
+  const sessionRows = (sessions ?? []) as WorkoutSessionRow[];
+
+  if (!sessionRows.length) {
+    return { data: [], error: null };
+  }
+
+  const sessionIds = sessionRows.map((session) => session.id);
+
+  const { data: exercises, error: exercisesError } = await supabase
+    .from("workout_session_exercises")
+    .select("*")
+    .eq("gym_id", gymId)
+    .eq("member_id", memberId)
+    .in("session_id", sessionIds)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (exercisesError) {
+    logApiError("Failed to get workout session exercises", exercisesError);
+    return { data: null, error: exercisesError };
+  }
+
+  const exerciseRows = (exercises ?? []) as WorkoutSessionExerciseRow[];
+  const exerciseIds = exerciseRows.map((exercise) => exercise.id);
+  let setRows: WorkoutSetRow[] = [];
+
+  if (exerciseIds.length) {
+    const { data: sets, error: setsError } = await supabase
+      .from("workout_sets")
+      .select("*")
+      .eq("gym_id", gymId)
+      .eq("member_id", memberId)
+      .in("session_exercise_id", exerciseIds)
+      .order("set_number", { ascending: true });
+
+    if (setsError) {
+      logApiError("Failed to get workout sets", setsError);
+      return { data: null, error: setsError };
+    }
+
+    setRows = (sets ?? []) as WorkoutSetRow[];
+  }
+
+  const data = sessionRows.map<WorkoutSessionWithDetails>((session) => ({
+    ...session,
+    exercises: exerciseRows
+      .filter((exercise) => String(exercise.session_id) === String(session.id))
+      .map((exercise) => ({
+        ...exercise,
+        sets: setRows.filter((set) => String(set.session_exercise_id) === String(exercise.id)),
+      })),
+  }));
+
+  return { data, error: null };
+}
+
+export async function addWorkoutSession(payload: WorkoutSessionPayload): Promise<MemberPortalApiResult<WorkoutSessionWithDetails>> {
+  const { exercises, ...sessionPayload } = payload;
+  const { data: session, error: sessionError } = await supabase
+    .from("workout_sessions")
+    .insert(sessionPayload)
+    .select("*")
+    .maybeSingle();
+
+  if (sessionError || !session?.id) {
+    const error = sessionError ?? new Error("Workout session was not created");
+    logApiError("Failed to add workout session", error);
+    return { data: null, error };
+  }
+
+  const exercisePayloads = exercises.map((exercise, index) => ({
+    session_id: session.id,
+    gym_id: payload.gym_id,
+    member_id: payload.member_id,
+    exercise_name: exercise.exercise_name,
+    muscle: exercise.muscle,
+    equipment: exercise.equipment,
+    notes: exercise.notes,
+    sort_order: index + 1,
+  }));
+
+  const { data: insertedExercises, error: exercisesError } = await supabase
+    .from("workout_session_exercises")
+    .insert(exercisePayloads)
+    .select("*");
+
+  if (exercisesError || !insertedExercises) {
+    logApiError("Failed to add workout session exercises", exercisesError);
+    await supabase.from("workout_sessions").delete().eq("id", session.id).eq("gym_id", payload.gym_id).eq("member_id", payload.member_id);
+    return { data: null, error: exercisesError ?? new Error("Workout exercises were not created") };
+  }
+
+  const insertedExerciseRows = insertedExercises as WorkoutSessionExerciseRow[];
+  const setPayloads = insertedExerciseRows.flatMap((exerciseRow, exerciseIndex) =>
+    exercises[exerciseIndex].sets.map((set) => ({
+      session_id: session.id,
+      session_exercise_id: exerciseRow.id,
+      gym_id: payload.gym_id,
+      member_id: payload.member_id,
+      set_number: set.set_number,
+      weight: set.weight,
+      reps: set.reps,
+      rpe: set.rpe,
+      completed: set.completed,
+    })),
+  );
+
+  let insertedSetRows: WorkoutSetRow[] = [];
+
+  if (setPayloads.length) {
+    const { data: insertedSets, error: setsError } = await supabase.from("workout_sets").insert(setPayloads).select("*");
+
+    if (setsError || !insertedSets) {
+      logApiError("Failed to add workout sets", setsError);
+      await supabase.from("workout_sessions").delete().eq("id", session.id).eq("gym_id", payload.gym_id).eq("member_id", payload.member_id);
+      return { data: null, error: setsError ?? new Error("Workout sets were not created") };
+    }
+
+    insertedSetRows = insertedSets as WorkoutSetRow[];
+  }
+
+  return {
+    data: {
+      ...(session as WorkoutSessionRow),
+      exercises: insertedExerciseRows.map((exercise) => ({
+        ...exercise,
+        sets: insertedSetRows.filter((set) => String(set.session_exercise_id) === String(exercise.id)),
+      })),
+    },
+    error: null,
+  };
+}
+
+export async function deleteWorkoutSession(id: MemberPortalId, gymId: MemberPortalId, memberId: MemberPortalId): Promise<MemberPortalApiResult<null>> {
+  const { error } = await supabase.from("workout_sessions").delete().eq("id", id).eq("gym_id", gymId).eq("member_id", memberId);
+
+  logApiError("Failed to delete workout session", error);
   return { data: null, error };
 }
 

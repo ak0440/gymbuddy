@@ -7,12 +7,12 @@ import { supabase } from "../../lib/supabase";
 
 const logoSrc = "/gymbuddy_image/logo/Logo.png";
 const loginRoleStorageKey = "gymbuddy:login-role";
-type LoginRole = "admin" | "member";
+type LoginRole = "member";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedLoginRole, setSelectedLoginRole] = useState<LoginRole>("admin");
+  const [selectedLoginRole] = useState<LoginRole>("member");
   const [errorMessage, setErrorMessage] = useState("");
   const [portalNotice, setPortalNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,7 +44,7 @@ export default function LoginPage() {
     window.location.href = "/dashboard";
   }
 
-  function showComingSoon(role: "Trainer") {
+  function showComingSoon(role: "Admin" | "Trainer") {
     setErrorMessage("");
     setPortalNotice(`${role} portal coming soon`);
   }
@@ -63,10 +63,10 @@ export default function LoginPage() {
                 <span className="font-normal text-zinc-100">Buddy</span>
               </p>
             </div>
-            <p className="mt-8 text-sm font-bold uppercase tracking-[0.22em] text-lime-300">Partner Login</p>
+            <p className="mt-8 text-sm font-bold uppercase tracking-[0.22em] text-lime-300">Member Login</p>
             <h1 className="mt-3 text-3xl font-black tracking-normal text-white sm:text-4xl">Welcome back</h1>
             <p className="mt-3 text-sm leading-6 text-zinc-400">
-              Access your gym management workspace.
+              Access your fitness workspace.
             </p>
           </div>
 
@@ -117,23 +117,23 @@ export default function LoginPage() {
             </button>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              {(["admin", "member"] as LoginRole[]).map((role) => (
-                <button
-                  key={role}
-                  type="button"
-                  onClick={() => {
-                    setSelectedLoginRole(role);
-                    setPortalNotice("");
-                  }}
-                  className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left text-sm font-bold transition ${
-                    selectedLoginRole === role
-                      ? "border-lime-300/40 bg-lime-300/10 text-lime-100"
-                      : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-lime-300/30 hover:text-lime-200"
-                  }`}
-                >
-                  <span>{role === "admin" ? "Admin" : "Member"}</span>
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => showComingSoon("Admin")}
+                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-zinc-400"
+              >
+                <span>Admin</span>
+                <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-lime-200">
+                  Coming Soon
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPortalNotice("")}
+                className="flex items-center justify-between gap-3 rounded-lg border border-lime-300/40 bg-lime-300/10 px-4 py-3 text-left text-sm font-bold text-lime-100"
+              >
+                <span>Member</span>
+              </button>
               <button
                 type="button"
                 onClick={() => showComingSoon("Trainer")}
