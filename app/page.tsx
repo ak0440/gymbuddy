@@ -745,7 +745,7 @@ function DashboardHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0b0f0d]/95 backdrop-blur-xl">
+      <header className={`sticky top-0 z-40 border-b border-white/10 bg-[#0b0f0d]/95 backdrop-blur-xl ${activeRole === "member" ? "hidden md:block" : ""}`}>
         <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3.5">
             <button
@@ -2160,7 +2160,7 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
   }
 
   return (
-    <main className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#0a0d0b] text-white">
+    <main className={`min-h-screen w-full max-w-full overflow-x-hidden text-white ${activeRole === "member" ? "bg-[#f6f7f4] md:bg-[#0a0d0b]" : "bg-[#0a0d0b]"}`}>
       {!roleReady ? (
         <div className="grid min-h-screen place-items-center px-4">
           <p className="rounded-lg border border-white/10 bg-[#111713] px-5 py-4 text-sm font-bold text-zinc-300 shadow-2xl shadow-black/20">
@@ -2188,7 +2188,7 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
       )}
 
       <div className="min-h-screen w-full max-w-full overflow-x-hidden">
-        <div className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8">
+        <div className={`mx-auto w-full max-w-7xl overflow-x-hidden ${activeRole === "member" ? "px-0 py-0 md:px-4 md:py-5 lg:px-8" : "px-4 py-5 sm:px-6 lg:px-8"}`}>
           {!activeRole ? <HomeContent isAuthenticated={isAuthenticated} dashboardHref={dashboardHref} /> : null}
           {activeRole === "admin" && activeSection === "Admin" ? <AdminContent /> : null}
           {activeRole === "admin" && activeSection === "Members" ? <MembersContent /> : null}

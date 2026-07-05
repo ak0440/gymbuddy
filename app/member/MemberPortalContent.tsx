@@ -1402,7 +1402,7 @@ export default function MemberPortalContent() {
   }
 
   return (
-    <div className="member-mobile-theme -mx-4 grid gap-3 px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:mx-0 md:px-0 md:gap-5 md:pb-0 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="member-mobile-theme grid min-h-screen gap-3 px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:min-h-0 md:px-0 md:gap-5 md:pb-0 lg:grid-cols-[240px_minmax(0,1fr)]">
       <style jsx global>{`
         @media (max-width: 767px) {
           .member-mobile-theme {
@@ -1416,7 +1416,7 @@ export default function MemberPortalContent() {
           .member-mobile-theme div[class*="bg-white/[0.035]"] {
             background: #ffffff !important;
             border-color: #e2e7dc !important;
-            box-shadow: none !important;
+            box-shadow: 0 10px 24px rgba(23, 32, 24, 0.06) !important;
           }
 
           .member-mobile-theme header[class*="bg-[#0a0d0b]"],
