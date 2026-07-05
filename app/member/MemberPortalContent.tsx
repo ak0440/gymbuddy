@@ -336,6 +336,10 @@ function profileFromRow(row: MemberProfile): ProfileForm {
   };
 }
 
+function firstNameFromProfile(profile: ProfileForm) {
+  return profile.fullName.trim().split(/\s+/)[0] || "Amit";
+}
+
 function numberOrNull(value: string) {
   const trimmedValue = value.trim();
 
@@ -806,32 +810,36 @@ export default function MemberPortalContent() {
   }
 
   function renderDashboard() {
+    const firstName = firstNameFromProfile(profile);
+
     return (
-      <div className="space-y-6">
-        <Card>
+      <div className="space-y-3 md:space-y-6">
+        <Card className="p-4 md:p-5">
           <p className="hidden text-sm font-bold uppercase tracking-[0.22em] text-lime-300 md:block">Member Dashboard</p>
-          <h2 className="mt-3 text-2xl font-black tracking-normal text-white sm:text-3xl">
-            {profile.fullName.trim() ? `Hello, ${profile.fullName.trim()}.` : "Hello."} Let&apos;s track today&apos;s progress.
+          <h2 className="text-2xl font-black tracking-normal text-white md:mt-3 md:text-3xl">
+            Hello, {firstName}
           </h2>
+          <p className="mt-1 text-sm font-semibold text-zinc-400 md:text-base">Let&apos;s track today&apos;s progress.</p>
         </Card>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-1 md:gap-4 lg:grid-cols-3">
           {[
-            { title: "Add Workout", subtitle: "Log today's training session.", target: "Add Workout" as MemberSection },
-            { title: "Add Meal", subtitle: "Track your nutrition for today.", target: "Meal Log" as MemberSection },
-            { title: "Upload Photo", subtitle: "Capture today's visual progress.", target: "Progress Photos" as MemberSection },
+            { title: "Workout", icon: "+", subtitle: "Log today's training session.", target: "Add Workout" as MemberSection },
+            { title: "Meal", icon: "M", subtitle: "Track your nutrition for today.", target: "Meal Log" as MemberSection },
+            { title: "Photo", icon: "P", subtitle: "Capture today's visual progress.", target: "Progress Photos" as MemberSection },
           ].map((card) => (
             <button
               key={card.title}
               type="button"
               onClick={() => setActiveSection(card.target)}
-              className="rounded-lg border border-lime-300/20 bg-lime-300/[0.08] p-5 text-left shadow-2xl shadow-black/20 transition hover:border-lime-300/50 hover:bg-lime-300/[0.12]"
+              className="rounded-lg border border-lime-300/20 bg-lime-300/[0.08] p-3 text-left shadow-2xl shadow-black/20 transition hover:border-lime-300/50 hover:bg-lime-300/[0.12] md:p-5"
             >
-              <p className="text-xl font-black text-white">+ {card.title}</p>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">{card.subtitle}</p>
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-lime-400 text-sm font-black text-[#07100b] md:h-9 md:w-9">{card.icon}</span>
+              <p className="mt-2 text-sm font-black text-white md:text-xl">Add {card.title}</p>
+              <p className="mt-1 hidden text-sm leading-6 text-zinc-400 md:block">{card.subtitle}</p>
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid grid-cols-1 gap-3 md:gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <Card>
             <h3 className="text-lg font-black text-white">Today&apos;s Status</h3>
             <div className="mt-5 grid gap-4">
@@ -992,9 +1000,9 @@ export default function MemberPortalContent() {
         <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="hidden h-12 w-full rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60 md:block">
           {workoutSaving ? "Saving..." : "Save Workout"}
         </button>
-        <div className="member-mobile-actionbar fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 grid grid-cols-2 gap-2 border-t border-white/10 bg-[#0b0f0d]/95 px-3 py-1.5 backdrop-blur-xl md:hidden">
-          <button type="button" onClick={openAddExerciseModal} className="h-10 rounded-lg border border-lime-300/30 bg-lime-300/10 text-sm font-black text-lime-100">+ Exercise</button>
-          <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="h-10 rounded-lg bg-lime-400 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60">
+        <div className="member-mobile-actionbar fixed inset-x-0 bottom-[calc(4.05rem+env(safe-area-inset-bottom))] z-30 grid grid-cols-2 gap-2 border-t border-white/10 bg-[#0b0f0d]/95 px-4 py-2 backdrop-blur-xl md:hidden">
+          <button type="button" onClick={openAddExerciseModal} className="h-11 rounded-lg border-2 border-lime-400 bg-white text-sm font-black text-[#172018] shadow-sm">+ Exercise</button>
+          <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="h-11 rounded-lg bg-lime-400 text-sm font-black text-[#07100b] shadow-sm disabled:cursor-not-allowed disabled:bg-[#dce4d6] disabled:text-[#7b8678]">
             {workoutSaving ? "Saving..." : "Finish Workout"}
           </button>
         </div>
@@ -1394,7 +1402,7 @@ export default function MemberPortalContent() {
   }
 
   return (
-    <div className="member-mobile-theme grid gap-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:gap-5 md:pb-0 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="member-mobile-theme -mx-4 grid gap-3 px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:mx-0 md:px-0 md:gap-5 md:pb-0 lg:grid-cols-[240px_minmax(0,1fr)]">
       <style jsx global>{`
         @media (max-width: 767px) {
           .member-mobile-theme {
@@ -1453,15 +1461,15 @@ export default function MemberPortalContent() {
           }
         }
       `}</style>
-      <header className="sticky top-0 z-30 -mx-4 flex h-16 items-center justify-between border-b border-white/10 bg-[#0a0d0b]/95 px-4 backdrop-blur-xl md:hidden">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-lime-400 text-sm font-black text-[#07100b]">GB</span>
+      <header className="sticky top-0 z-30 -mx-4 flex h-14 items-center justify-between border-b border-white/10 bg-[#0a0d0b]/95 px-4 backdrop-blur-xl md:hidden">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-lime-400 text-xs font-black text-[#07100b]">GB</span>
           <div className="min-w-0">
             <p className="truncate text-base font-black text-white">{mobilePageTitle()}</p>
             <p className="truncate text-xs font-semibold text-zinc-500">Amit</p>
           </div>
         </div>
-        <button type="button" onClick={() => changeMemberSection("Profile")} className="grid h-9 w-9 place-items-center rounded-full border border-lime-300/20 bg-lime-300/10 text-xs font-black text-lime-100">
+        <button type="button" onClick={() => changeMemberSection("Profile")} className="grid h-8 w-8 place-items-center rounded-full border border-lime-300/20 bg-lime-300/10 text-xs font-black text-lime-100">
           A
         </button>
       </header>
@@ -1498,7 +1506,7 @@ export default function MemberPortalContent() {
         </div>
         {renderActiveSection()}
       </div>
-      <nav className="member-mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0b0f0d]/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden">
+      <nav className="member-mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0b0f0d]/95 px-2 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl md:hidden">
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
           {mobilePrimaryNavigation.map((item) => {
             const active = activeSection === item.section;
@@ -1507,7 +1515,7 @@ export default function MemberPortalContent() {
                 key={item.section}
                 type="button"
                 onClick={() => changeMemberSection(item.section)}
-                className={`grid min-w-0 place-items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-black transition ${active ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
+                className={`grid min-w-0 place-items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-black transition ${active ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
               >
                 <span className="grid h-5 w-5 place-items-center rounded-md border border-current text-[10px]">{item.icon}</span>
                 <span className="truncate">{item.label}</span>
@@ -1517,7 +1525,7 @@ export default function MemberPortalContent() {
           <button
             type="button"
             onClick={() => setMobileMoreOpen((current) => !current)}
-            className={`grid min-w-0 place-items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-black transition ${mobileMoreNavigation.some((item) => item.section === activeSection) ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
+            className={`grid min-w-0 place-items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-black transition ${mobileMoreNavigation.some((item) => item.section === activeSection) ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
           >
             <span className="grid h-5 w-5 place-items-center rounded-md border border-current text-[10px]">+</span>
             <span>More</span>

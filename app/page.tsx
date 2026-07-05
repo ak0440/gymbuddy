@@ -94,6 +94,25 @@ const role: Role | null = null;
 const logoSrc = "/gymbuddy_image/logo/Logo.png";
 const loginRoleStorageKey = "gymbuddy:login-role";
 
+function getDashboardHrefFromStoredRole() {
+  if (typeof window === "undefined") {
+    return "/dashboard";
+  }
+
+  const storedRole = localStorage.getItem(loginRoleStorageKey);
+
+  // TODO: Route members to "/member/dashboard" after a dedicated member dashboard route is added.
+  if (storedRole === "member") {
+    return "/dashboard";
+  }
+
+  if (storedRole === "trainer") {
+    return "/dashboard";
+  }
+
+  return "/dashboard";
+}
+
 function defaultSectionForRole(selectedRole: Role | null): MainSection {
   if (selectedRole === "trainer") {
     return "TrainerDashboard";
@@ -350,15 +369,26 @@ function Panel({ title, action, children }: { title: string; action?: string; ch
 
 function PublicHeader({
   isAuthenticated,
+  authLoading,
+  dashboardHref,
   onLoginClick,
+  onLogout,
 }: {
   isAuthenticated: boolean;
+  authLoading: boolean;
+  dashboardHref: string;
   onLoginClick: () => void;
+  onLogout: () => void;
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   function closeMobileMenu() {
     setMobileMenuOpen(false);
+  }
+
+  async function logoutFromPublicHeader() {
+    closeMobileMenu();
+    await onLogout();
   }
 
   return (
@@ -384,32 +414,47 @@ function PublicHeader({
           <a href="#who" className="rounded-lg px-3 py-2 text-sm font-bold text-white transition hover:bg-white/[0.06] hover:text-lime-200">
             Who It&apos;s For
           </a>
-          {isAuthenticated ? (
-            <a
-              href="/dashboard"
-              className="rounded-lg bg-lime-400 px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-300"
-            >
-              Dashboard
-            </a>
+          {authLoading ? (
+            <span className="rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-bold text-zinc-500">Checking...</span>
+          ) : isAuthenticated ? (
+            <>
+              <a
+                href={dashboardHref}
+                className="rounded-lg bg-lime-400 px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-300"
+              >
+                Dashboard
+              </a>
+              <button
+                type="button"
+                onClick={logoutFromPublicHeader}
+                className="rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-black text-white transition hover:border-lime-300/40 hover:text-lime-200"
+              >
+                Logout
+              </button>
+            </>
           ) : (
-            <button
-              type="button"
-              onClick={onLoginClick}
-              className="rounded-lg bg-lime-400 px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-300"
-            >
-              Member Login
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onLoginClick}
+                className="rounded-lg bg-lime-400 px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-300"
+              >
+                Member Login
+              </button>
+              <a
+                href="tel:+919876543210"
+                className="rounded-lg bg-white px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-100"
+              >
+                Book Demo
+              </a>
+            </>
           )}
-          <a
-            href="tel:+919876543210"
-            className="rounded-lg bg-white px-4 py-2 text-sm font-black text-[#07100b] transition hover:bg-lime-100"
-          >
-            Book Demo
-          </a>
         </nav>
         <div className="flex items-center gap-2 md:hidden">
-          {isAuthenticated ? (
-            <a href="/dashboard" className="rounded-lg bg-lime-400 px-3 py-2 text-xs font-black text-[#07100b]">
+          {authLoading ? (
+            <span className="rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-bold text-zinc-500">...</span>
+          ) : isAuthenticated ? (
+            <a href={dashboardHref} className="rounded-lg bg-lime-400 px-3 py-2 text-xs font-black text-[#07100b]">
               Dashboard
             </a>
           ) : (
@@ -435,18 +480,38 @@ function PublicHeader({
               <button type="button" onClick={closeMobileMenu} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-zinc-300">x</button>
             </div>
             <nav className="mt-5 grid gap-2">
-              {[
-                ["Features", "#features"],
-                ["Pricing", "#pricing"],
-                ["Who It's For", "#who"],
-              ].map(([label, href]) => (
-                <a key={label} href={href} onClick={closeMobileMenu} className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white">
-                  {label}
-                </a>
-              ))}
-              <a href="tel:+919876543210" onClick={closeMobileMenu} className="rounded-lg border border-lime-300/30 bg-lime-300/10 px-4 py-3 text-sm font-black text-lime-100">
-                Book Demo
-              </a>
+              {authLoading ? (
+                <div className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-zinc-400">
+                  Checking session...
+                </div>
+              ) : isAuthenticated ? (
+                <>
+                  <a href={dashboardHref} onClick={closeMobileMenu} className="rounded-lg border border-lime-300/30 bg-lime-300/10 px-4 py-3 text-sm font-black text-lime-100">
+                    Dashboard
+                  </a>
+                  <button type="button" onClick={logoutFromPublicHeader} className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-white">
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  {[
+                    ["Features", "#features"],
+                    ["Pricing", "#pricing"],
+                    ["Who It's For", "#who"],
+                  ].map(([label, href]) => (
+                    <a key={label} href={href} onClick={closeMobileMenu} className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white">
+                      {label}
+                    </a>
+                  ))}
+                  <button type="button" onClick={() => { closeMobileMenu(); onLoginClick(); }} className="rounded-lg border border-lime-300/30 bg-lime-300/10 px-4 py-3 text-left text-sm font-black text-lime-100">
+                    Member Login
+                  </button>
+                  <a href="tel:+919876543210" onClick={closeMobileMenu} className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white">
+                    Book Demo
+                  </a>
+                </>
+              )}
             </nav>
           </aside>
         </div>
@@ -1212,7 +1277,7 @@ function TrainerProfileContent() {
   );
 }
 
-function HomeContent({ isAuthenticated }: { isAuthenticated: boolean }) {
+function HomeContent({ isAuthenticated, dashboardHref }: { isAuthenticated: boolean; dashboardHref: string }) {
   const [activeSlide, setActiveSlide] = useState(0);
   const currentImage = heroImages[activeSlide];
   const homeActions = [
@@ -1230,7 +1295,7 @@ function HomeContent({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <div id="home" className="space-y-4 md:space-y-6">
-      <section className="relative min-h-[540px] w-full max-w-full overflow-hidden rounded-lg border border-white/10 bg-[#111713] md:min-h-[620px]">
+      <section className="relative min-h-[500px] w-full max-w-full overflow-hidden rounded-lg border border-white/10 bg-[#111713] md:min-h-[580px]">
         <Image
           key={currentImage.src}
           src={currentImage.src}
@@ -1243,9 +1308,7 @@ function HomeContent({ isAuthenticated }: { isAuthenticated: boolean }) {
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/20 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/65 to-transparent" />
 
-        <div className="relative z-10 grid min-h-[540px] content-between gap-6 p-4 sm:p-8 md:min-h-[620px] lg:p-10">
-          <div />
-
+        <div className="relative z-10 flex min-h-[500px] items-end p-4 sm:p-8 md:min-h-[580px] lg:p-10">
           <div className="max-w-3xl">
             <p className="mb-4 text-sm font-black uppercase tracking-[0.24em] text-lime-300">{currentImage.title}</p>
             <h2 className="text-4xl font-black tracking-normal text-white sm:text-5xl lg:text-6xl">
@@ -1261,53 +1324,25 @@ function HomeContent({ isAuthenticated }: { isAuthenticated: boolean }) {
             <div id="start" className="mt-8 flex flex-wrap gap-3">
               {isAuthenticated ? (
                 <a
-                  href="/dashboard"
+                  href={dashboardHref}
                   className="rounded-lg border border-lime-300/60 bg-lime-300/10 px-5 py-3 text-sm font-black text-lime-100 transition hover:bg-lime-300 hover:text-[#07100b]"
                 >
                   Go to Dashboard
                 </a>
-              ) : null}
-              {homeActions.map((action) => {
-                const className =
-                  action.variant === "primary"
-                    ? "rounded-lg bg-lime-400 px-5 py-3 text-sm font-black text-[#07100b] shadow-[0_0_28px_rgba(163,230,53,0.24)] transition hover:bg-lime-300"
-                    : "rounded-lg bg-white px-5 py-3 text-sm font-black text-[#07100b] transition hover:bg-lime-100";
+              ) : (
+                homeActions.map((action) => {
+                  const className =
+                    action.variant === "primary"
+                      ? "rounded-lg bg-lime-400 px-5 py-3 text-sm font-black text-[#07100b] shadow-[0_0_28px_rgba(163,230,53,0.24)] transition hover:bg-lime-300"
+                      : "rounded-lg bg-white px-5 py-3 text-sm font-black text-[#07100b] transition hover:bg-lime-100";
 
-                return (
-                  <a key={action.label} href={action.href} className={className}>
-                    {action.label}
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="grid w-full max-w-full gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                { label: "Active Users", value: "2.4K+" },
-                { label: "Fitness Spaces", value: "8+" },
-                { label: "Daily Sessions", value: "32+" },
-                { label: "Check-ins Logged", value: "48K+" },
-              ].map((item) => (
-                <div key={item.label} className="rounded-lg border border-white/10 bg-black/35 p-4 backdrop-blur-md">
-                  <p className="text-2xl font-black text-white">{item.value}</p>
-                  <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">{item.label}</p>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              {heroImages.map((image, index) => (
-                <button
-                  key={image.src}
-                  type="button"
-                  onClick={() => setActiveSlide(index)}
-                  className={`h-2.5 rounded-full transition-all ${
-                    index === activeSlide ? "w-10 bg-lime-300" : "w-2.5 bg-white/35 hover:bg-white/60"
-                  }`}
-                  aria-label={`Show ${image.title}`}
-                />
-              ))}
+                  return (
+                    <a key={action.label} href={action.href} className={className}>
+                      {action.label}
+                    </a>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -2045,6 +2080,8 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
   const [activeSection, setActiveSection] = useState<MainSection>(defaultSectionForRole(initialRole));
   const [roleReady, setRoleReady] = useState(initialRole === null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [dashboardHref, setDashboardHref] = useState("/dashboard");
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   useEffect(() => {
@@ -2072,6 +2109,8 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
 
       if (active) {
         setIsAuthenticated(Boolean(data.session));
+        setDashboardHref(getDashboardHrefFromStoredRole());
+        setAuthLoading(false);
       }
     }
 
@@ -2079,6 +2118,8 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(Boolean(session));
+      setDashboardHref(getDashboardHrefFromStoredRole());
+      setAuthLoading(false);
     });
 
     return () => {
@@ -2106,12 +2147,15 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
   }, []);
 
   async function handleLogout() {
+    setAuthLoading(false);
+    setIsAuthenticated(false);
+    setLoginModalOpen(false);
     sessionStorage.setItem("gymbuddy:logout-home", "true");
     localStorage.removeItem(loginRoleStorageKey);
     await supabase.auth.signOut();
     setActiveRole(null);
     setActiveSection("Home");
-    setIsAuthenticated(false);
+    setDashboardHref("/dashboard");
     window.location.href = "/";
   }
 
@@ -2134,12 +2178,18 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
           onLogout={handleLogout}
         />
       ) : (
-        <PublicHeader isAuthenticated={isAuthenticated} onLoginClick={() => setLoginModalOpen(true)} />
+        <PublicHeader
+          isAuthenticated={isAuthenticated}
+          authLoading={authLoading}
+          dashboardHref={dashboardHref}
+          onLoginClick={() => setLoginModalOpen(true)}
+          onLogout={handleLogout}
+        />
       )}
 
       <div className="min-h-screen w-full max-w-full overflow-x-hidden">
         <div className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8">
-          {!activeRole ? <HomeContent isAuthenticated={isAuthenticated} /> : null}
+          {!activeRole ? <HomeContent isAuthenticated={isAuthenticated} dashboardHref={dashboardHref} /> : null}
           {activeRole === "admin" && activeSection === "Admin" ? <AdminContent /> : null}
           {activeRole === "admin" && activeSection === "Members" ? <MembersContent /> : null}
           {activeRole === "admin" && activeSection === "Payments" ? <PaymentsContent /> : null}
