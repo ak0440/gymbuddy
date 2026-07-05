@@ -355,20 +355,26 @@ function PublicHeader({
   isAuthenticated: boolean;
   onLoginClick: () => void;
 }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  function closeMobileMenu() {
+    setMobileMenuOpen(false);
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0b0f0d]/95 backdrop-blur-xl">
-      <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-14 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 md:min-h-16 lg:px-8">
         <button type="button" className="flex items-center gap-3.5 text-left" aria-label="Go to home">
-          <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400 text-base font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.24)] sm:h-14 sm:w-14">
+          <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-lime-400 text-base font-black text-[#07100b] shadow-[0_0_24px_rgba(163,230,53,0.24)] md:h-14 md:w-14">
             <Image src={logoSrc} alt="GymBuddy logo" fill sizes="52px" className="object-contain p-1" />
           </span>
-          <span className="text-xl tracking-normal text-white">
+          <span className="text-lg tracking-normal text-white md:text-xl">
             <span className="font-semibold">Gym</span>
             <span className="font-normal text-zinc-100">Buddy</span>
           </span>
         </button>
 
-        <nav className="flex flex-wrap items-center justify-end gap-2">
+        <nav className="hidden items-center justify-end gap-2 md:flex">
           <a href="#features" className="rounded-lg px-3 py-2 text-sm font-bold text-white transition hover:bg-white/[0.06] hover:text-lime-200">
             Features
           </a>
@@ -401,7 +407,50 @@ function PublicHeader({
             Book Demo
           </a>
         </nav>
+        <div className="flex items-center gap-2 md:hidden">
+          {isAuthenticated ? (
+            <a href="/dashboard" className="rounded-lg bg-lime-400 px-3 py-2 text-xs font-black text-[#07100b]">
+              Dashboard
+            </a>
+          ) : (
+            <button type="button" onClick={onLoginClick} className="rounded-lg bg-lime-400 px-3 py-2 text-xs font-black text-[#07100b]">
+              Member Login
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lg font-black text-white"
+            aria-label="Open menu"
+          >
+            =
+          </button>
+        </div>
       </div>
+      {mobileMenuOpen ? (
+        <div className="fixed inset-0 z-50 bg-black/65 md:hidden" onClick={closeMobileMenu}>
+          <aside className="absolute right-0 top-0 h-full w-[82vw] max-w-xs border-l border-white/10 bg-[#111713] p-4 shadow-2xl shadow-black" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-black text-white">Menu</p>
+              <button type="button" onClick={closeMobileMenu} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-zinc-300">x</button>
+            </div>
+            <nav className="mt-5 grid gap-2">
+              {[
+                ["Features", "#features"],
+                ["Pricing", "#pricing"],
+                ["Who It's For", "#who"],
+              ].map(([label, href]) => (
+                <a key={label} href={href} onClick={closeMobileMenu} className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white">
+                  {label}
+                </a>
+              ))}
+              <a href="tel:+919876543210" onClick={closeMobileMenu} className="rounded-lg border border-lime-300/30 bg-lime-300/10 px-4 py-3 text-sm font-black text-lime-100">
+                Book Demo
+              </a>
+            </nav>
+          </aside>
+        </div>
+      ) : null}
     </header>
   );
 }
@@ -1180,8 +1229,8 @@ function HomeContent({ isAuthenticated }: { isAuthenticated: boolean }) {
   }, []);
 
   return (
-    <div id="home" className="space-y-6">
-      <section className="relative min-h-[620px] w-full max-w-full overflow-hidden rounded-lg border border-white/10 bg-[#111713]">
+    <div id="home" className="space-y-4 md:space-y-6">
+      <section className="relative min-h-[540px] w-full max-w-full overflow-hidden rounded-lg border border-white/10 bg-[#111713] md:min-h-[620px]">
         <Image
           key={currentImage.src}
           src={currentImage.src}
@@ -1194,7 +1243,7 @@ function HomeContent({ isAuthenticated }: { isAuthenticated: boolean }) {
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/20 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/65 to-transparent" />
 
-        <div className="relative z-10 grid min-h-[620px] content-between gap-8 p-6 sm:p-8 lg:p-10">
+        <div className="relative z-10 grid min-h-[540px] content-between gap-6 p-4 sm:p-8 md:min-h-[620px] lg:p-10">
           <div />
 
           <div className="max-w-3xl">

@@ -110,6 +110,20 @@ const memberNavigation: MemberSection[] = [
   "Support",
 ];
 
+const mobilePrimaryNavigation: Array<{ label: string; section: MemberSection; icon: string }> = [
+  { label: "Home", section: "Dashboard", icon: "H" },
+  { label: "Workout", section: "Add Workout", icon: "W" },
+  { label: "Meal", section: "Meal Log", icon: "M" },
+  { label: "Progress", section: "Progress", icon: "P" },
+];
+
+const mobileMoreNavigation: Array<{ label: string; section: MemberSection }> = [
+  { label: "Photos", section: "Progress Photos" },
+  { label: "Membership", section: "Membership" },
+  { label: "Profile", section: "Profile" },
+  { label: "Support", section: "Support" },
+];
+
 const mealTypes: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snacks", "Pre Workout", "Post Workout"];
 const fitnessGoals: FitnessGoal[] = ["Fat Loss", "Muscle Gain", "General Fitness", "Strength", "Endurance"];
 const photoTypes: PhotoType[] = ["Front", "Side", "Back"];
@@ -261,15 +275,15 @@ const emptyProfile: ProfileForm = {
 };
 
 function inputClass() {
-  return "h-11 w-full rounded-lg border border-white/10 bg-black/25 px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60";
+  return "h-11 w-full rounded-lg border border-white/10 bg-black/25 px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60 md:h-11";
 }
 
 function areaClass() {
-  return "min-h-24 w-full rounded-lg border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60";
+  return "min-h-20 w-full rounded-lg border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60 md:min-h-24";
 }
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-lg border border-white/10 bg-[#111713] p-5 shadow-2xl shadow-black/20 ${className}`}>{children}</section>;
+  return <section className={`rounded-lg border border-white/10 bg-[#111713] p-4 shadow-2xl shadow-black/20 md:p-5 ${className}`}>{children}</section>;
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -382,6 +396,7 @@ function mapWorkoutSessionFromSupabase(row: WorkoutSessionWithDetails): WorkoutS
 
 export default function MemberPortalContent() {
   const [activeSection, setActiveSection] = useState<MemberSection>("Dashboard");
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [savedWorkouts, setSavedWorkouts] = useState<WorkoutSession[]>([]);
   const [workoutsLoading, setWorkoutsLoading] = useState(false);
   const [workoutSaving, setWorkoutSaving] = useState(false);
@@ -394,6 +409,9 @@ export default function MemberPortalContent() {
   const [equipmentFilter, setEquipmentFilter] = useState("All Equipment");
   const [muscleFilter, setMuscleFilter] = useState("All Muscles");
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<number[]>([]);
+  const [workoutNotesOpen, setWorkoutNotesOpen] = useState(false);
+  const [exerciseMenuId, setExerciseMenuId] = useState<MemberPortalId | null>(null);
+  const [exerciseNoteId, setExerciseNoteId] = useState<MemberPortalId | null>(null);
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [mealForm, setMealForm] = useState<Omit<MealEntry, "id">>(emptyMeal);
   const [editingMealId, setEditingMealId] = useState<number | null>(null);
@@ -781,7 +799,7 @@ export default function MemberPortalContent() {
     return (
       <div className="space-y-6">
         <Card>
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-lime-300">Member Dashboard</p>
+          <p className="hidden text-sm font-bold uppercase tracking-[0.22em] text-lime-300 md:block">Member Dashboard</p>
           <h2 className="mt-3 text-2xl font-black tracking-normal text-white sm:text-3xl">
             {profile.fullName.trim() ? `Hello, ${profile.fullName.trim()}.` : "Hello."} Let&apos;s track today&apos;s progress.
           </h2>
@@ -856,8 +874,14 @@ export default function MemberPortalContent() {
     const currentTotalVolume = calculateTotalVolume(workoutSession.exercises);
 
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="space-y-3 pb-16 md:space-y-6 md:pb-0">
+        <div className="rounded-lg border border-white/10 bg-[#111713] px-4 py-3 md:hidden">
+          <p className="text-sm font-black text-white">
+            {workoutSession.exercises.length} exercises &bull; {currentTotalSets} sets &bull; {currentTotalVolume} kg volume
+          </p>
+          <p className="mt-1 text-xs font-semibold text-zinc-500">{currentCompletedSets} completed sets</p>
+        </div>
+        <div className="hidden grid-cols-2 gap-3 sm:grid-cols-4 md:grid">
           <MiniMetric label="Exercises" value={String(workoutSession.exercises.length)} />
           <MiniMetric label="Total Sets" value={String(currentTotalSets)} />
           <MiniMetric label="Volume" value={`${currentTotalVolume} kg`} />
@@ -872,14 +896,24 @@ export default function MemberPortalContent() {
         ) : null}
 
         <Card>
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px] lg:items-end">
-            <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px] lg:items-end">
+            <div className="grid gap-3 sm:grid-cols-2 md:gap-4">
               <Field label="Workout Name"><input value={workoutSession.name} onChange={(event) => setWorkoutSession((current) => ({ ...current, name: event.target.value }))} placeholder="Push day, Leg day..." className={inputClass()} /></Field>
               <Field label="Workout Type"><input value={workoutSession.type} onChange={(event) => setWorkoutSession((current) => ({ ...current, type: event.target.value }))} className={inputClass()} /></Field>
               <Field label="Date"><input type="date" value={workoutSession.date} onChange={(event) => setWorkoutSession((current) => ({ ...current, date: event.target.value }))} className={inputClass()} /></Field>
-              <Field label="Notes"><input value={workoutSession.notes} onChange={(event) => setWorkoutSession((current) => ({ ...current, notes: event.target.value }))} placeholder="Session notes" className={inputClass()} /></Field>
+              <div className="hidden md:block"><Field label="Notes"><input value={workoutSession.notes} onChange={(event) => setWorkoutSession((current) => ({ ...current, notes: event.target.value }))} placeholder="Session notes" className={inputClass()} /></Field></div>
             </div>
-            <button type="button" onClick={() => setExerciseModalOpen(true)} className="h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b]">Add Exercise</button>
+            <button type="button" onClick={() => setExerciseModalOpen(true)} className="hidden h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] md:block">Add Exercise</button>
+            <div className="md:hidden">
+              <button type="button" onClick={() => setWorkoutNotesOpen((current) => !current)} className="text-sm font-black text-lime-300">
+                {workoutNotesOpen ? "Hide workout notes" : "Add workout notes"}
+              </button>
+              {workoutNotesOpen ? (
+                <div className="mt-3">
+                  <Field label="Notes"><input value={workoutSession.notes} onChange={(event) => setWorkoutSession((current) => ({ ...current, notes: event.target.value }))} placeholder="Session notes" className={inputClass()} /></Field>
+                </div>
+              ) : null}
+            </div>
           </div>
         </Card>
 
@@ -888,34 +922,55 @@ export default function MemberPortalContent() {
             <Card key={exercise.id}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="text-xl font-black text-white">{exercise.name}</h3>
+                  <h3 className="text-lg font-black text-white md:text-xl">{exercise.name}</h3>
                   <p className="mt-1 text-sm font-semibold text-zinc-400">{exercise.muscle} - {exercise.equipment}</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="hidden flex-wrap gap-2 md:flex">
                   <ActionButton onClick={() => duplicateWorkoutExercise(exercise)}>Duplicate</ActionButton>
                   <ActionButton tone="danger" onClick={() => removeWorkoutExercise(exercise.id)}>Remove</ActionButton>
                 </div>
+                <div className="relative md:hidden">
+                  <button type="button" onClick={() => setExerciseMenuId((current) => (String(current) === String(exercise.id) ? null : exercise.id))} className="absolute right-0 top-0 grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lg font-black text-zinc-300">
+                    ...
+                  </button>
+                  {String(exerciseMenuId) === String(exercise.id) ? (
+                    <div className="absolute right-0 top-11 z-20 grid w-36 gap-1 rounded-lg border border-white/10 bg-[#0d120f] p-2 shadow-xl shadow-black">
+                      <button type="button" onClick={() => { setExerciseNoteId(exercise.id); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-zinc-200">Add Note</button>
+                      <button type="button" onClick={() => { duplicateWorkoutExercise(exercise); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-zinc-200">Duplicate</button>
+                      <button type="button" onClick={() => { removeWorkoutExercise(exercise.id); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-red-200">Remove</button>
+                    </div>
+                  ) : null}
+                </div>
               </div>
-              <div className="mt-4">
+              <div className="mt-4 hidden md:block">
                 <Field label="Exercise Notes"><input value={exercise.notes} onChange={(event) => updateWorkoutExercise(exercise.id, { notes: event.target.value })} className={inputClass()} /></Field>
               </div>
-              <div className="mt-5 grid gap-2">
-                <div className="grid grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] gap-2 text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">
+              {String(exerciseNoteId) === String(exercise.id) ? (
+                <div className="mt-4 md:hidden">
+                  <Field label="Exercise Notes"><input value={exercise.notes} onChange={(event) => updateWorkoutExercise(exercise.id, { notes: event.target.value })} className={inputClass()} /></Field>
+                </div>
+              ) : null}
+              <div className="mt-4 grid gap-2 md:mt-5">
+                <div className="grid grid-cols-[30px_minmax(48px,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_40px] gap-1 text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-500 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] md:gap-2 md:text-xs md:tracking-[0.12em]">
                   <span>Set</span>
+                  <span className="md:hidden">Previous</span>
                   <span>Kg</span>
                   <span>Reps</span>
-                  <span>RPE</span>
+                  <span className="hidden md:inline">RPE</span>
                   <span>Done</span>
-                  <span />
+                  <span className="hidden md:inline" />
                 </div>
                 {exercise.sets.map((set, index) => (
-                  <div key={set.id} className="grid grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] items-center gap-2">
+                  <div key={set.id} className="grid grid-cols-[30px_minmax(48px,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_40px] items-center gap-1 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] md:gap-2">
                     <p className="text-sm font-black text-white">{index + 1}</p>
+                    <p className="truncate text-xs font-semibold text-zinc-500 md:hidden">
+                      {index > 0 ? `${exercise.sets[index - 1].weight || "-"}x${exercise.sets[index - 1].reps || "-"}` : "-"}
+                    </p>
                     <input inputMode="decimal" value={set.weight} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { weight: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-sm text-white outline-none focus:border-lime-300/60" />
                     <input inputMode="numeric" value={set.reps} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { reps: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-sm text-white outline-none focus:border-lime-300/60" />
-                    <input inputMode="decimal" value={set.rpe} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { rpe: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-sm text-white outline-none focus:border-lime-300/60" />
+                    <input inputMode="decimal" value={set.rpe} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { rpe: event.target.value })} className="hidden h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-sm text-white outline-none focus:border-lime-300/60 md:block" />
                     <input type="checkbox" checked={set.completed} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { completed: event.target.checked })} className="h-5 w-5 justify-self-center accent-lime-400" />
-                    <button type="button" onClick={() => removeSetFromExercise(exercise.id, set.id)} className="h-9 rounded-lg border border-red-300/20 bg-red-300/10 text-xs font-black text-red-200">-</button>
+                    <button type="button" onClick={() => removeSetFromExercise(exercise.id, set.id)} className="hidden h-9 rounded-lg border border-red-300/20 bg-red-300/10 text-xs font-black text-red-200 md:block">-</button>
                   </div>
                 ))}
               </div>
@@ -924,9 +979,15 @@ export default function MemberPortalContent() {
           )) : <EmptyState text="No exercises selected yet. Add exercises to build your workout." />}
         </div>
 
-        <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="h-12 w-full rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="hidden h-12 w-full rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60 md:block">
           {workoutSaving ? "Saving..." : "Save Workout"}
         </button>
+        <div className="fixed inset-x-0 bottom-[calc(4.65rem+env(safe-area-inset-bottom))] z-30 grid grid-cols-2 gap-2 border-t border-white/10 bg-[#0b0f0d]/95 px-3 py-2 backdrop-blur-xl md:hidden">
+          <button type="button" onClick={() => setExerciseModalOpen(true)} className="h-11 rounded-lg border border-lime-300/30 bg-lime-300/10 text-sm font-black text-lime-100">+ Add Exercise</button>
+          <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="h-11 rounded-lg bg-lime-400 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60">
+            {workoutSaving ? "Saving..." : "Finish Workout"}
+          </button>
+        </div>
 
         <Card>
           <h2 className="text-xl font-black text-white">Workout History</h2>
@@ -1025,16 +1086,18 @@ export default function MemberPortalContent() {
 
   function renderMealLog() {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="space-y-3 md:space-y-6">
+        <button type="button" onClick={() => document.getElementById("member-add-meal")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-11 w-full rounded-lg bg-lime-400 text-sm font-black text-[#07100b] md:hidden">+ Add Meal</button>
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-3 md:gap-4">
           <MiniMetric label="Total Calories" value={String(mealTotals.calories)} />
           <MiniMetric label="Total Protein" value={`${mealTotals.protein}g`} />
           <MiniMetric label="Meals Logged" value={String(mealTotals.count)} />
         </div>
-        <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-          <Card>
+        <div className="grid gap-3 md:gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+          <Card className="scroll-mt-20" >
+            <div id="member-add-meal" />
             <h2 className="text-xl font-black text-white">{editingMealId ? "Edit Meal" : "Add Meal"}</h2>
-            <div className="mt-5 grid gap-4">
+            <div className="mt-4 grid gap-3 md:mt-5 md:gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Date"><input type="date" value={mealForm.date} onChange={(event) => setMealForm((current) => ({ ...current, date: event.target.value }))} className={inputClass()} /></Field>
                 <Field label="Time"><input type="time" value={mealForm.time} onChange={(event) => setMealForm((current) => ({ ...current, time: event.target.value }))} className={inputClass()} /></Field>
@@ -1054,7 +1117,7 @@ export default function MemberPortalContent() {
             <h2 className="text-xl font-black text-white">Meal History</h2>
             <div className="mt-5 grid gap-3">
               {meals.length ? meals.map((entry) => (
-                <div key={entry.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+                <div key={entry.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-3 md:p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="font-black text-white">{entry.food}</p>
@@ -1079,17 +1142,19 @@ export default function MemberPortalContent() {
     const weightChange = latestProgress && previousProgress ? Number(latestProgress.weight || 0) - Number(previousProgress.weight || 0) : 0;
     const bodyFatChange = latestProgress && previousProgress ? Number(latestProgress.bodyFat || 0) - Number(previousProgress.bodyFat || 0) : 0;
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+      <div className="space-y-3 md:space-y-6">
+        <button type="button" onClick={() => document.getElementById("member-add-progress")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-11 w-full rounded-lg bg-lime-400 text-sm font-black text-[#07100b] md:hidden">+ Add Progress</button>
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-4 md:gap-4">
           <MiniMetric label="Latest Weight" value={`${latestProgress?.weight ?? "-"} kg`} />
           <MiniMetric label="Latest Body Fat" value={`${latestProgress?.bodyFat ?? "-"}%`} />
           <MiniMetric label="Latest Waist" value={`${latestProgress?.waist ?? "-"} in`} />
-          <MiniMetric label="Latest vs Previous" value={`${weightChange.toFixed(1)} kg / ${bodyFatChange.toFixed(1)}%`} />
+          <div className="hidden md:block"><MiniMetric label="Latest vs Previous" value={`${weightChange.toFixed(1)} kg / ${bodyFatChange.toFixed(1)}%`} /></div>
         </div>
-        <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-          <Card>
+        <div className="grid gap-3 md:gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+          <Card className="scroll-mt-20">
+            <div id="member-add-progress" />
             <h2 className="text-xl font-black text-white">{editingProgressId ? "Edit Progress" : "Add Progress"}</h2>
-            <div className="mt-5 grid gap-4">
+            <div className="mt-4 grid gap-3 md:mt-5 md:gap-4">
               <Field label="Date"><input type="date" value={progressForm.date} onChange={(event) => setProgressForm((current) => ({ ...current, date: event.target.value }))} className={inputClass()} /></Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Weight"><input value={progressForm.weight} onChange={(event) => setProgressForm((current) => ({ ...current, weight: event.target.value }))} className={inputClass()} /></Field>
@@ -1106,7 +1171,7 @@ export default function MemberPortalContent() {
             <h2 className="text-xl font-black text-white">Progress History</h2>
             <div className="mt-5 grid gap-3">
               {progressEntries.map((entry) => (
-                <div key={entry.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+                <div key={entry.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-3 md:p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="font-black text-white">{entry.date}</p>
@@ -1128,11 +1193,13 @@ export default function MemberPortalContent() {
 
   function renderPhotos() {
     return (
-      <div className="space-y-6">
-        <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <Card>
+      <div className="space-y-3 md:space-y-6">
+        <button type="button" onClick={() => document.getElementById("member-upload-photo")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-11 w-full rounded-lg bg-lime-400 text-sm font-black text-[#07100b] md:hidden">Upload Photo</button>
+        <div className="grid gap-3 md:gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <Card className="scroll-mt-20">
+            <div id="member-upload-photo" />
             <h2 className="text-xl font-black text-white">Upload Progress Photo</h2>
-            <div className="mt-5 grid gap-4">
+            <div className="mt-4 grid gap-3 md:mt-5 md:gap-4">
               <Field label="Photo Type"><select value={photoType} onChange={(event) => setPhotoType(event.target.value as PhotoType)} className={inputClass()}>{photoTypes.map((type) => <option key={type}>{type}</option>)}</select></Field>
               <Field label="Date"><input type="date" value={photoDate} onChange={(event) => setPhotoDate(event.target.value)} className={inputClass()} /></Field>
               <Field label="Notes"><textarea value={photoNotes} onChange={(event) => setPhotoNotes(event.target.value)} className={areaClass()} /></Field>
@@ -1144,7 +1211,7 @@ export default function MemberPortalContent() {
             {photoTypes.map((type) => (
               <Card key={type}>
                 <h3 className="text-lg font-black text-white">{type} Photos</h3>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {photos.filter((photo) => photo.type === type).length ? photos.filter((photo) => photo.type === type).map((photo) => (
                     <article key={photo.id} className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.035]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1286,15 +1353,47 @@ export default function MemberPortalContent() {
     return renderSupport();
   }
 
+  function changeMemberSection(section: MemberSection) {
+    setActiveSection(section);
+    setMobileMoreOpen(false);
+  }
+
+  function mobilePageTitle() {
+    const titles: Record<MemberSection, string> = {
+      Dashboard: "Home",
+      "Add Workout": "Workout",
+      "Meal Log": "Meal Log",
+      Progress: "Progress",
+      "Progress Photos": "Photos",
+      Membership: "Membership",
+      Profile: "Profile",
+      Support: "Support",
+    };
+
+    return titles[activeSection];
+  }
+
   return (
-    <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="grid gap-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:gap-5 md:pb-0 lg:grid-cols-[240px_minmax(0,1fr)]">
+      <header className="sticky top-0 z-30 -mx-4 flex h-16 items-center justify-between border-b border-white/10 bg-[#0a0d0b]/95 px-4 backdrop-blur-xl md:hidden">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-lime-400 text-sm font-black text-[#07100b]">GB</span>
+          <div className="min-w-0">
+            <p className="truncate text-base font-black text-white">{mobilePageTitle()}</p>
+            <p className="truncate text-xs font-semibold text-zinc-500">Amit</p>
+          </div>
+        </div>
+        <button type="button" onClick={() => changeMemberSection("Profile")} className="grid h-9 w-9 place-items-center rounded-full border border-lime-300/20 bg-lime-300/10 text-xs font-black text-lime-100">
+          A
+        </button>
+      </header>
       <aside className="hidden rounded-lg border border-white/10 bg-[#111713] p-3 shadow-2xl shadow-black/20 lg:block">
         <nav className="grid gap-1">
           {memberNavigation.map((item) => (
             <button
               key={item}
               type="button"
-              onClick={() => setActiveSection(item)}
+              onClick={() => changeMemberSection(item)}
               className={`rounded-lg px-3 py-3 text-left text-sm font-bold transition ${
                 activeSection === item ? "bg-lime-400 text-[#07100b]" : "text-zinc-300 hover:bg-white/[0.06] hover:text-lime-200"
               }`}
@@ -1304,13 +1403,13 @@ export default function MemberPortalContent() {
           ))}
         </nav>
       </aside>
-      <div className="min-w-0 space-y-5">
-        <div className="flex gap-2 overflow-x-auto rounded-lg border border-white/10 bg-[#111713] p-2 lg:hidden">
+      <div className="min-w-0 space-y-3 md:space-y-5">
+        <div className="hidden gap-2 overflow-x-auto rounded-lg border border-white/10 bg-[#111713] p-2 md:flex lg:hidden">
           {memberNavigation.map((item) => (
             <button
               key={item}
               type="button"
-              onClick={() => setActiveSection(item)}
+              onClick={() => changeMemberSection(item)}
               className={`shrink-0 rounded-md px-4 py-2 text-sm font-bold transition ${
                 activeSection === item ? "bg-lime-400 text-[#07100b]" : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
               }`}
@@ -1321,6 +1420,49 @@ export default function MemberPortalContent() {
         </div>
         {renderActiveSection()}
       </div>
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0b0f0d]/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden">
+        <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+          {mobilePrimaryNavigation.map((item) => {
+            const active = activeSection === item.section;
+            return (
+              <button
+                key={item.section}
+                type="button"
+                onClick={() => changeMemberSection(item.section)}
+                className={`grid min-w-0 place-items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-black transition ${active ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
+              >
+                <span className="grid h-5 w-5 place-items-center rounded-md border border-current text-[10px]">{item.icon}</span>
+                <span className="truncate">{item.label}</span>
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => setMobileMoreOpen((current) => !current)}
+            className={`grid min-w-0 place-items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-black transition ${mobileMoreNavigation.some((item) => item.section === activeSection) ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
+          >
+            <span className="grid h-5 w-5 place-items-center rounded-md border border-current text-[10px]">+</span>
+            <span>More</span>
+          </button>
+        </div>
+      </nav>
+      {mobileMoreOpen ? (
+        <div className="fixed inset-0 z-50 bg-black/60 md:hidden" onClick={() => setMobileMoreOpen(false)}>
+          <section className="absolute inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] rounded-xl border border-white/10 bg-[#111713] p-3 shadow-2xl shadow-black" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-sm font-black text-white">More</p>
+              <button type="button" onClick={() => setMobileMoreOpen(false)} className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-zinc-300">x</button>
+            </div>
+            <div className="grid gap-2">
+              {mobileMoreNavigation.map((item) => (
+                <button key={item.section} type="button" onClick={() => changeMemberSection(item.section)} className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-white">
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
