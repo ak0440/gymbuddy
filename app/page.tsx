@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import MembersPageContent from "./members/MembersPageContent";
 import PaymentsPageContent from "./payments/PaymentsPageContent";
 import SettingsPageContent from "./settings/SettingsPageContent";
 import ToolsPageContent from "./tools/ToolsPageContent";
 import TrainersPageContent from "./trainers/TrainersPageContent";
+import MemberPortalContent from "./member/MemberPortalContent";
 import { supabase } from "../lib/supabase";
 
 type Role = "admin" | "member" | "trainer";
+type LoginRole = "admin" | "member";
 type MainSection =
   | "Home"
   | "Admin"
@@ -88,18 +90,25 @@ type AdminDashboardMemberRow = {
   expiryDate?: string | null;
 };
 
-const memberMenu = [
-  "Dashboard",
-  "My Profile",
-  "My Membership",
-  "Attendance",
-  "Workout Plan",
-  "Payments",
-  "Support",
-];
-
 const role: Role | null = null;
 const logoSrc = "/gymbuddy_image/logo/Logo.png";
+const loginRoleStorageKey = "gymbuddy:login-role";
+
+function defaultSectionForRole(selectedRole: Role | null): MainSection {
+  if (selectedRole === "trainer") {
+    return "TrainerDashboard";
+  }
+
+  if (selectedRole === "admin") {
+    return "Admin";
+  }
+
+  if (selectedRole === "member") {
+    return "Members";
+  }
+
+  return "Home";
+}
 
 const adminNavigation: AdminNavItem[] = [
   { type: "single", label: "Dashboard", section: "Admin" },
@@ -170,28 +179,8 @@ const heroImages = [
   },
 ];
 
-const memberStats: DashboardStat[] = [
-  { label: "Membership Status", value: "Active", trend: "Premium plan", tone: "emerald" },
-  { label: "Days Remaining", value: "42", trend: "Renews soon", tone: "lime" },
-  { label: "Attendance Count", value: "18", trend: "This month", tone: "cyan" },
-  { label: "Next Renewal Date", value: "Jul 22", trend: "Auto-pay on", tone: "amber" },
-];
-
 const expiringMemberships = [
   { name: "Amit", plan: "Annual", date: "Active", days: "No renewal alert" },
-];
-
-const recentAttendance = [
-  { date: "Jun 10", checkIn: "07:12 AM", workout: "Push day", duration: "74 min" },
-  { date: "Jun 8", checkIn: "06:58 AM", workout: "Conditioning", duration: "52 min" },
-  { date: "Jun 6", checkIn: "07:20 AM", workout: "Pull day", duration: "69 min" },
-  { date: "Jun 4", checkIn: "06:45 AM", workout: "Leg day", duration: "81 min" },
-];
-
-const workoutPlan = [
-  { day: "Mon", focus: "Strength training", coach: "Animesh", status: "Planned" },
-  { day: "Wed", focus: "Mobility and conditioning", coach: "Animesh", status: "Planned" },
-  { day: "Fri", focus: "Full body session", coach: "Animesh", status: "Planned" },
 ];
 
 const trainers = [
@@ -420,7 +409,9 @@ function PublicHeader({
 function LoginModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedLoginRole, setSelectedLoginRole] = useState<LoginRole>("admin");
   const [errorMessage, setErrorMessage] = useState("");
+  const [portalNotice, setPortalNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -437,11 +428,12 @@ function LoginModal({ onClose }: { onClose: () => void }) {
     };
   }, [onClose]);
 
-  async function loginAdmin() {
+  async function loginSelectedRole() {
     setErrorMessage("");
+    setPortalNotice("");
 
     if (!email.trim() || !password) {
-      setErrorMessage("Please enter your admin email and password.");
+      setErrorMessage("Please enter your email and password.");
       return;
     }
 
@@ -453,14 +445,20 @@ function LoginModal({ onClose }: { onClose: () => void }) {
     });
 
     if (error) {
-      console.error("Admin login failed", error);
-      setErrorMessage("Invalid admin email or password.");
+      console.error(`${selectedLoginRole} login failed`, error);
+      setErrorMessage("Invalid email or password.");
       setIsSubmitting(false);
       return;
     }
 
+    localStorage.setItem(loginRoleStorageKey, selectedLoginRole);
     onClose();
     window.location.href = "/dashboard";
+  }
+
+  function showTrainerComingSoon() {
+    setErrorMessage("");
+    setPortalNotice("Trainer portal coming soon");
   }
 
   return (
@@ -501,7 +499,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               onChange={(event) => setPassword(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
-                  loginAdmin();
+                  loginSelectedRole();
                 }
               }}
               className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/25 px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60"
@@ -512,25 +510,47 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         {errorMessage ? (
           <p className="mt-4 rounded-lg border border-red-300/20 bg-red-300/10 px-3 py-2 text-sm font-semibold text-red-100">{errorMessage}</p>
         ) : null}
+        {portalNotice ? (
+          <p className="mt-4 rounded-lg border border-lime-300/20 bg-lime-300/10 px-3 py-2 text-sm font-semibold text-lime-100">{portalNotice}</p>
+        ) : null}
 
         <button
           type="button"
-          onClick={loginAdmin}
+          onClick={loginSelectedRole}
           disabled={isSubmitting}
           className="mt-6 h-11 w-full rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? "Signing in..." : "Sign In"}
         </button>
 
-        <div className="mt-5 grid gap-2 sm:grid-cols-2">
-          {["Trainer", "Member"].map((role) => (
-            <div key={role} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-bold text-zinc-400">
-              <span>{role}</span>
-              <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-lime-200">
-                Coming Soon
-              </span>
-            </div>
+        <div className="mt-5 grid gap-2 sm:grid-cols-3">
+          {(["admin", "member"] as LoginRole[]).map((loginRole) => (
+            <button
+              key={loginRole}
+              type="button"
+              onClick={() => {
+                setSelectedLoginRole(loginRole);
+                setPortalNotice("");
+              }}
+              className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm font-bold transition ${
+                selectedLoginRole === loginRole
+                  ? "border-lime-300/40 bg-lime-300/10 text-lime-100"
+                  : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-lime-300/30 hover:text-lime-200"
+              }`}
+            >
+              <span>{loginRole === "admin" ? "Admin" : "Member"}</span>
+            </button>
           ))}
+          <button
+            type="button"
+            onClick={showTrainerComingSoon}
+            className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-bold text-zinc-400"
+          >
+            <span>Trainer</span>
+            <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-lime-200">
+              Coming Soon
+            </span>
+          </button>
         </div>
       </section>
     </div>
@@ -550,12 +570,35 @@ function DashboardHeader({
 }) {
   const roleLabel = activeRole[0].toUpperCase() + activeRole.slice(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const desktopNavRef = useRef<HTMLElement | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     Members: false,
     Trainers: false,
     Business: false,
   });
   const menuItems = activeRole === "admin" ? adminNavigation : [];
+
+  function closeAllGroups() {
+    setExpandedGroups({
+      Members: false,
+      Trainers: false,
+      Business: false,
+    });
+  }
+
+  useEffect(() => {
+    function closeGroupsOnOutsideClick(event: PointerEvent) {
+      if (desktopNavRef.current && !desktopNavRef.current.contains(event.target as Node)) {
+        closeAllGroups();
+      }
+    }
+
+    document.addEventListener("pointerdown", closeGroupsOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeGroupsOnOutsideClick);
+    };
+  }, []);
 
   function updateDashboardUrl(section: MainSection, params?: Record<string, string>) {
     const query = new URLSearchParams({ section: menuLabels[section] ?? section });
@@ -573,11 +616,17 @@ function DashboardHeader({
     if (section === "Members" && params?.filter) {
       window.dispatchEvent(new CustomEvent("gymbuddy:members-filter", { detail: params.filter }));
     }
+    closeAllGroups();
     setDrawerOpen(false);
   }
 
   function toggleGroup(label: string) {
-    setExpandedGroups((current) => ({ ...current, [label]: !current[label] }));
+    setExpandedGroups((current) => ({
+      Members: false,
+      Trainers: false,
+      Business: false,
+      [label]: !current[label],
+    }));
   }
 
   return (
@@ -609,7 +658,7 @@ function DashboardHeader({
             </div>
           </div>
 
-          <nav className="hidden max-w-full gap-2 md:flex">
+          <nav ref={desktopNavRef} className="hidden max-w-full gap-2 md:flex">
             {menuItems.map((item) => (
               item.type === "single" ? (
                 <button
@@ -657,7 +706,10 @@ function DashboardHeader({
             ))}
             <button
               type="button"
-              onClick={onLogout}
+              onClick={() => {
+                closeAllGroups();
+                onLogout();
+              }}
               className="h-10 shrink-0 rounded-lg border border-white/10 bg-white/[0.05] px-4 text-sm font-bold text-white transition hover:border-lime-300/40 hover:text-lime-200"
             >
               Logout
@@ -672,7 +724,10 @@ function DashboardHeader({
             type="button"
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             aria-label="Close navigation menu"
-            onClick={() => setDrawerOpen(false)}
+            onClick={() => {
+              closeAllGroups();
+              setDrawerOpen(false);
+            }}
           />
           <aside className="relative h-full w-[86vw] max-w-sm border-r border-white/10 bg-[#0b0f0d] p-4 shadow-2xl shadow-black">
             <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
@@ -690,7 +745,10 @@ function DashboardHeader({
               </div>
               <button
                 type="button"
-                onClick={() => setDrawerOpen(false)}
+                onClick={() => {
+                  closeAllGroups();
+                  setDrawerOpen(false);
+                }}
                 className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-zinc-300 transition hover:border-lime-300/40 hover:text-lime-200"
                 aria-label="Close navigation menu"
               >
@@ -744,6 +802,7 @@ function DashboardHeader({
               <button
                 type="button"
                 onClick={() => {
+                  closeAllGroups();
                   setDrawerOpen(false);
                   onLogout();
                 }}
@@ -1929,78 +1988,33 @@ function SimpleSection({ section }: { section: "Branches" | "Services" | "Tools"
 }
 
 function MemberContent() {
-  return (
-    <div className="space-y-6">
-      <div className="flex gap-2 overflow-x-auto rounded-lg border border-white/10 bg-[#111713] p-2">
-        {memberMenu.map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={`shrink-0 rounded-md px-4 py-2 text-sm font-bold transition ${
-              item === "Dashboard"
-                ? "bg-lime-400 text-[#07100b]"
-                : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-            }`}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {memberStats.map((stat) => (
-          <StatCard key={stat.label} stat={stat} />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Panel title="Recent Attendance" action="History">
-          <div className="space-y-3">
-            {recentAttendance.map((item) => (
-              <div
-                key={`${item.date}-${item.workout}`}
-                className="grid gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-sm text-zinc-300 sm:grid-cols-4"
-              >
-                <p className="font-bold text-white">{item.date}</p>
-                <p>{item.checkIn}</p>
-                <p>{item.workout}</p>
-                <p className="font-bold text-lime-200">{item.duration}</p>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel title="Current Workout Plan" action="Open plan">
-          <div className="space-y-3">
-            {workoutPlan.map((item) => (
-              <div
-                key={`${item.day}-${item.focus}`}
-                className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 sm:grid-cols-[44px_minmax(0,1fr)_auto]"
-              >
-                <div className="grid h-11 w-11 place-items-center rounded-lg bg-lime-300/12 text-sm font-black text-lime-200">
-                  {item.day}
-                </div>
-                <div>
-                  <p className="font-bold text-white">{item.focus}</p>
-                  <p className="mt-1 text-sm text-zinc-400">Coach: {item.coach}</p>
-                </div>
-                <StatusBadge>{item.status}</StatusBadge>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
-    </div>
-  );
+  return <MemberPortalContent />;
 }
 
 export default function Home({ initialRole = role }: { initialRole?: Role | null }) {
   const [activeRole, setActiveRole] = useState<Role | null>(initialRole);
-  const [activeSection, setActiveSection] = useState<MainSection>(
-    initialRole === "trainer" ? "TrainerDashboard" : initialRole === "admin" ? "Admin" : initialRole === "member" ? "Members" : "Home",
-  );
+  const [activeSection, setActiveSection] = useState<MainSection>(defaultSectionForRole(initialRole));
+  const [roleReady, setRoleReady] = useState(initialRole === null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!initialRole) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const storedRole = localStorage.getItem(loginRoleStorageKey);
+      const resolvedRole: Role = storedRole === "member" ? "member" : "admin";
+      setActiveRole(resolvedRole);
+      setActiveSection(defaultSectionForRole(resolvedRole));
+      setRoleReady(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [initialRole]);
 
   useEffect(() => {
     let active = true;
@@ -2045,6 +2059,7 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
 
   async function handleLogout() {
     sessionStorage.setItem("gymbuddy:logout-home", "true");
+    localStorage.removeItem(loginRoleStorageKey);
     await supabase.auth.signOut();
     setActiveRole(null);
     setActiveSection("Home");
@@ -2054,6 +2069,15 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
 
   return (
     <main className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#0a0d0b] text-white">
+      {!roleReady ? (
+        <div className="grid min-h-screen place-items-center px-4">
+          <p className="rounded-lg border border-white/10 bg-[#111713] px-5 py-4 text-sm font-bold text-zinc-300 shadow-2xl shadow-black/20">
+            Opening dashboard...
+          </p>
+        </div>
+      ) : null}
+      {roleReady ? (
+        <>
       {activeRole ? (
         <DashboardHeader
           activeRole={activeRole}
@@ -2085,6 +2109,8 @@ export default function Home({ initialRole = role }: { initialRole?: Role | null
         </div>
       </div>
       {!activeRole && loginModalOpen ? <LoginModal onClose={() => setLoginModalOpen(false)} /> : null}
+        </>
+      ) : null}
     </main>
   );
 }

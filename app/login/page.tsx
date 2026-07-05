@@ -6,20 +6,23 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 
 const logoSrc = "/gymbuddy_image/logo/Logo.png";
+const loginRoleStorageKey = "gymbuddy:login-role";
+type LoginRole = "admin" | "member";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedLoginRole, setSelectedLoginRole] = useState<LoginRole>("admin");
   const [errorMessage, setErrorMessage] = useState("");
   const [portalNotice, setPortalNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function loginAdmin() {
+  async function loginSelectedRole() {
     setErrorMessage("");
     setPortalNotice("");
 
     if (!email.trim() || !password) {
-      setErrorMessage("Please enter your admin email and password.");
+      setErrorMessage("Please enter your email and password.");
       return;
     }
 
@@ -31,16 +34,17 @@ export default function LoginPage() {
     });
 
     if (error) {
-      console.error("Admin login failed", error);
-      setErrorMessage("Invalid admin email or password.");
+      console.error(`${selectedLoginRole} login failed`, error);
+      setErrorMessage("Invalid email or password.");
       setIsSubmitting(false);
       return;
     }
 
+    localStorage.setItem(loginRoleStorageKey, selectedLoginRole);
     window.location.href = "/dashboard";
   }
 
-  function showComingSoon(role: "Trainer" | "Member") {
+  function showComingSoon(role: "Trainer") {
     setErrorMessage("");
     setPortalNotice(`${role} portal coming soon`);
   }
@@ -88,7 +92,7 @@ export default function LoginPage() {
                   onChange={(event) => setPassword(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
-                      loginAdmin();
+                      loginSelectedRole();
                     }
                   }}
                   className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/25 px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60"
@@ -105,27 +109,41 @@ export default function LoginPage() {
 
             <button
               type="button"
-              onClick={loginAdmin}
+              onClick={loginSelectedRole}
               disabled={isSubmitting}
               className="mt-6 h-11 w-full rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {(["Trainer", "Member"] as const).map((role) => (
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {(["admin", "member"] as LoginRole[]).map((role) => (
                 <button
                   key={role}
                   type="button"
-                  onClick={() => showComingSoon(role)}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-zinc-300 transition hover:border-lime-300/30 hover:text-lime-200"
+                  onClick={() => {
+                    setSelectedLoginRole(role);
+                    setPortalNotice("");
+                  }}
+                  className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left text-sm font-bold transition ${
+                    selectedLoginRole === role
+                      ? "border-lime-300/40 bg-lime-300/10 text-lime-100"
+                      : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-lime-300/30 hover:text-lime-200"
+                  }`}
                 >
-                  <span>{role}</span>
-                  <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-lime-200">
-                    Coming Soon
-                  </span>
+                  <span>{role === "admin" ? "Admin" : "Member"}</span>
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => showComingSoon("Trainer")}
+                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-zinc-400"
+              >
+                <span>Trainer</span>
+                <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-lime-200">
+                  Coming Soon
+                </span>
+              </button>
             </div>
           </div>
         </section>
