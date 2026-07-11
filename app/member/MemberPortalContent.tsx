@@ -126,6 +126,8 @@ const mobileMoreNavigation: Array<{ label: string; section: MemberSection }> = [
   { label: "Support", section: "Support" },
 ];
 
+const memberSectionParam = "memberSection";
+
 const mealTypes: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snacks", "Pre Workout", "Post Workout"];
 const fitnessGoals: FitnessGoal[] = ["Fat Loss", "Muscle Gain", "General Fitness", "Strength", "Endurance"];
 const photoTypes: PhotoType[] = ["Front", "Side", "Back"];
@@ -551,6 +553,31 @@ function firstNameFromProfile(profile: ProfileForm) {
   return profile.fullName.trim().split(/\s+/)[0] || "Member";
 }
 
+function isMemberSection(value: string | null): value is MemberSection {
+  return Boolean(value && memberNavigation.includes(value as MemberSection));
+}
+
+function memberSectionUrl(section: MemberSection) {
+  const url = new URL(window.location.href);
+
+  if (section === "Dashboard") {
+    url.searchParams.delete(memberSectionParam);
+  } else {
+    url.searchParams.set(memberSectionParam, section);
+  }
+
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function getInitialMemberSection(): MemberSection {
+  if (typeof window === "undefined") {
+    return "Dashboard";
+  }
+
+  const initialSection = new URLSearchParams(window.location.search).get(memberSectionParam);
+  return isMemberSection(initialSection) ? initialSection : "Dashboard";
+}
+
 function numberOrNull(value: string) {
   const trimmedValue = value.trim();
 
@@ -610,7 +637,7 @@ function mapWorkoutSessionFromSupabase(row: WorkoutSessionWithDetails): WorkoutS
 }
 
 export default function MemberPortalContent() {
-  const [activeSection, setActiveSection] = useState<MemberSection>("Dashboard");
+  const [activeSection, setActiveSection] = useState<MemberSection>(() => getInitialMemberSection());
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [savedWorkouts, setSavedWorkouts] = useState<WorkoutSession[]>([]);
   const [workoutsLoading, setWorkoutsLoading] = useState(false);
@@ -755,6 +782,27 @@ export default function MemberPortalContent() {
       window.clearTimeout(timer);
     };
   }, [loadWorkoutHistory]);
+
+  useEffect(() => {
+    const resolvedInitialSection = getInitialMemberSection();
+
+    window.history.replaceState({ gymbuddyMemberSection: resolvedInitialSection }, "", memberSectionUrl(resolvedInitialSection));
+
+    function handleMemberPopState(event: PopStateEvent) {
+      const stateSection = event.state?.gymbuddyMemberSection;
+      const urlSection = new URLSearchParams(window.location.search).get(memberSectionParam);
+      const nextSection = isMemberSection(stateSection) ? stateSection : isMemberSection(urlSection) ? urlSection : "Dashboard";
+
+      setActiveSection(nextSection);
+      setMobileMoreOpen(false);
+    }
+
+    window.addEventListener("popstate", handleMemberPopState);
+
+    return () => {
+      window.removeEventListener("popstate", handleMemberPopState);
+    };
+  }, []);
 
   function toggleExerciseSelection(exerciseId: number) {
     setSelectedExerciseIds((current) => (current.includes(exerciseId) ? current.filter((id) => id !== exerciseId) : [...current, exerciseId]));
@@ -1568,8 +1616,11 @@ export default function MemberPortalContent() {
   }
 
   function changeMemberSection(section: MemberSection) {
-    setActiveSection(section);
+    const nextSection: MemberSection = section === "Profile" && activeSection === "Profile" ? "Dashboard" : section;
+
+    setActiveSection(nextSection);
     setMobileMoreOpen(false);
+    window.history.pushState({ gymbuddyMemberSection: nextSection }, "", memberSectionUrl(nextSection));
   }
 
   function mobilePageTitle() {
