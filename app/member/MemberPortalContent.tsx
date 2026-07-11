@@ -306,6 +306,150 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
+function MemberHomeHeader({ name, onProfile }: { name: string; onProfile: () => void }) {
+  return (
+    <header className="flex items-center justify-between gap-4 pt-1">
+      <div className="min-w-0">
+        <h1 className="truncate text-[26px] font-bold leading-tight tracking-normal text-white md:text-3xl">Hello, {name}</h1>
+        <p className="mt-1 text-sm font-normal leading-5 text-zinc-400">Ready to make today count?</p>
+      </div>
+      <button
+        type="button"
+        onClick={onProfile}
+        className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#172018] text-base font-semibold text-lime-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-lime-400 focus:ring-offset-2 focus:ring-offset-[#f6f7f4]"
+        aria-label="Open profile"
+      >
+        {name.slice(0, 1).toUpperCase()}
+      </button>
+    </header>
+  );
+}
+
+function TodayProgressCard({ completedGoals, totalGoals }: { completedGoals: number; totalGoals: number }) {
+  const progress = totalGoals ? Math.round((completedGoals / totalGoals) * 100) : 0;
+
+  return (
+    <section className="rounded-xl border border-[#e2e7dc] bg-white p-4 shadow-[0_10px_24px_rgba(23,32,24,0.06)]">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-normal text-zinc-400">Today&apos;s Progress</p>
+          <p className="mt-1 text-[28px] font-bold leading-none text-[#172018]">{progress}%</p>
+        </div>
+        <p className="rounded-full bg-[#f1f3ef] px-3 py-1 text-xs font-semibold text-zinc-500">
+          {completedGoals} of {totalGoals} goals completed
+        </p>
+      </div>
+      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-[#eef1eb]">
+        <div className="h-full rounded-full bg-lime-400 transition-all" style={{ width: `${progress}%` }} />
+      </div>
+    </section>
+  );
+}
+
+function StatusMetric({
+  icon,
+  title,
+  value,
+  detail,
+  progress,
+  action,
+  onAction,
+}: {
+  icon: MobileNavIcon;
+  title: string;
+  value: string;
+  detail?: string;
+  progress?: number;
+  action?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <section className="rounded-xl border border-[#e2e7dc] bg-white p-4 shadow-[0_10px_24px_rgba(23,32,24,0.05)]">
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f1f3ef] text-[#172018]">
+          <MobileNavGlyph icon={icon} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-semibold leading-5 text-[#172018]">{title}</p>
+          <p className="mt-0.5 truncate text-sm font-normal text-zinc-400">{value}</p>
+        </div>
+        {action && onAction ? (
+          <button
+            type="button"
+            onClick={onAction}
+            className="min-h-11 shrink-0 rounded-full bg-lime-400 px-4 text-sm font-semibold text-[#07100b] focus:outline-none focus:ring-2 focus:ring-lime-400 focus:ring-offset-2 focus:ring-offset-white"
+          >
+            {action}
+          </button>
+        ) : null}
+      </div>
+      {detail ? <p className="mt-3 text-sm font-normal leading-5 text-zinc-400">{detail}</p> : null}
+      {typeof progress === "number" ? (
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eef1eb]">
+          <div className="h-full rounded-full bg-lime-400" style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }} />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+type PortalActivityItem = {
+  id: number | string;
+  action: string;
+  detail: string;
+  time: string;
+};
+
+function EmptyActivityState({ onWorkout, onMeal }: { onWorkout: () => void; onMeal: () => void }) {
+  return (
+    <section className="rounded-xl border border-[#e2e7dc] bg-white p-4 text-center shadow-[0_10px_24px_rgba(23,32,24,0.05)]">
+      <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-[#f1f3ef] text-zinc-500">
+        <MobileNavGlyph icon="trending" />
+      </div>
+      <p className="mt-3 text-[15px] font-semibold text-[#172018]">Your fitness journey starts here.</p>
+      <p className="mx-auto mt-1 max-w-64 text-sm font-normal leading-5 text-zinc-400">Log your first workout or meal to see activity.</p>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button type="button" onClick={onWorkout} className="min-h-11 rounded-full bg-lime-400 px-4 text-sm font-semibold text-[#07100b]">Workout</button>
+        <button type="button" onClick={onMeal} className="min-h-11 rounded-full border border-[#dfe5d8] bg-white px-4 text-sm font-semibold text-[#172018]">Meal</button>
+      </div>
+    </section>
+  );
+}
+
+function RecentActivity({
+  items,
+  onWorkout,
+  onMeal,
+}: {
+  items: PortalActivityItem[];
+  onWorkout: () => void;
+  onMeal: () => void;
+}) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-lg font-semibold leading-6 text-white">Recent Activity</h2>
+      {items.length ? (
+        <div className="grid gap-2">
+          {items.map((item) => (
+            <article key={`${item.action}-${item.time}-${item.id}`} className="flex items-center gap-3 rounded-xl border border-[#e2e7dc] bg-white p-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#f1f3ef] text-zinc-500">
+                <MobileNavGlyph icon={item.action.includes("Meal") ? "utensils" : item.action.includes("Workout") ? "dumbbell" : "trending"} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-semibold text-[#172018]">{item.action}</p>
+                <p className="truncate text-sm font-normal text-zinc-400">{item.detail}</p>
+              </div>
+              <p className="shrink-0 text-xs font-normal text-zinc-500">{item.time}</p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <EmptyActivityState onWorkout={onWorkout} onMeal={onMeal} />
+      )}
+    </section>
+  );
+}
+
 function ActionButton({ children, onClick, tone = "default" }: { children: ReactNode; onClick?: () => void; tone?: "default" | "danger" }) {
   return (
     <button
@@ -404,7 +548,7 @@ function profileFromRow(row: MemberProfile): ProfileForm {
 }
 
 function firstNameFromProfile(profile: ProfileForm) {
-  return profile.fullName.trim().split(/\s+/)[0] || "Amit";
+  return profile.fullName.trim().split(/\s+/)[0] || "Member";
 }
 
 function numberOrNull(value: string) {
@@ -878,74 +1022,43 @@ export default function MemberPortalContent() {
 
   function renderDashboard() {
     const firstName = firstNameFromProfile(profile);
+    const todayWorkout = savedWorkouts.find((entry) => entry.date === todayDate);
+    const workoutLogged = Boolean(todayWorkout);
+    const mealsLogged = todayMeals.length;
+    const completedGoals = Number(workoutLogged) + Number(mealsLogged > 0);
+    const totalGoals = 2;
 
     return (
-      <div className="space-y-3 pt-1 md:space-y-6 md:pt-0">
-        <Card className="hidden p-4 md:block md:p-5">
-          <p className="hidden text-sm font-bold uppercase tracking-[0.22em] text-lime-300 md:block">Member Dashboard</p>
-          <h2 className="text-2xl font-black tracking-normal text-white md:mt-3 md:text-3xl">
-            Hello, {firstName}
-          </h2>
-          <p className="mt-1 text-sm font-semibold text-zinc-400 md:text-base">Let&apos;s track today&apos;s progress.</p>
-        </Card>
-        <div className="flex items-center justify-between md:hidden">
-          <h2 className="text-base font-black text-white">Quick Actions</h2>
-        </div>
-        <div className="grid grid-cols-3 gap-2 md:grid-cols-1 md:gap-4 lg:grid-cols-3">
-          {[
-            { title: "Workout", icon: "+", subtitle: "Log today's training session.", target: "Add Workout" as MemberSection },
-            { title: "Meal", icon: "M", subtitle: "Track your nutrition for today.", target: "Meal Log" as MemberSection },
-            { title: "Photo", icon: "P", subtitle: "Capture today's visual progress.", target: "Progress Photos" as MemberSection },
-          ].map((card) => (
-            <button
-              key={card.title}
-              type="button"
-              onClick={() => setActiveSection(card.target)}
-              className="rounded-lg border border-lime-300/20 bg-lime-300/[0.08] p-2.5 text-left shadow-2xl shadow-black/20 transition hover:border-lime-300/50 hover:bg-lime-300/[0.12] md:p-5"
-            >
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-lime-400 text-xs font-black text-[#07100b] md:h-9 md:w-9 md:text-sm">{card.icon}</span>
-              <p className="mt-2 text-xs font-black text-white md:text-xl">Add {card.title}</p>
-              <p className="mt-1 hidden text-sm leading-6 text-zinc-400 md:block">{card.subtitle}</p>
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 gap-3 md:gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <Card>
-            <h3 className="text-lg font-black text-white">Today</h3>
-            <div className="mt-3 grid gap-3 md:mt-5 md:gap-4">
-              {[
-                { label: "Workout Logged", value: savedWorkouts.some((entry) => entry.date === todayDate) ? "Yes" : "No", progress: savedWorkouts.some((entry) => entry.date === todayDate) ? "100%" : "0%" },
-                { label: "Meals Tracked", value: `${todayMeals.length}/4`, progress: `${Math.min(todayMeals.length * 25, 100)}%` },
-              ].map((item) => (
-                <div key={item.label} className="rounded-lg border border-white/10 bg-white/[0.035] p-3 md:p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-sm font-bold text-zinc-300">{item.label}</p>
-                    <p className="text-sm font-black text-white">{item.value}</p>
-                  </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-lime-400" style={{ width: item.progress }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-          <Card>
-            <h3 className="text-lg font-black text-white">Recent Activity</h3>
-            <div className="mt-3 grid gap-3 md:mt-5">
-              {recentPortalActivity.length ? recentPortalActivity.map((item) => (
-                <div key={`${item.action}-${item.time}`} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-bold text-white">{item.action}</p>
-                      <p className="mt-1 text-sm text-zinc-400">{item.detail}</p>
-                    </div>
-                    <p className="shrink-0 text-xs font-bold text-zinc-500">{item.time}</p>
-                  </div>
-                </div>
-              )) : <EmptyState text="No recent activity yet." />}
-            </div>
-          </Card>
-        </div>
+      <div className="space-y-4 pt-1 md:space-y-6 md:pt-0">
+        <MemberHomeHeader name={firstName} onProfile={() => changeMemberSection("Profile")} />
+
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold leading-6 text-white">Today</h2>
+          <TodayProgressCard completedGoals={completedGoals} totalGoals={totalGoals} />
+          <div className="grid gap-3 md:grid-cols-2">
+            <StatusMetric
+              icon="dumbbell"
+              title="Workout"
+              value={workoutLogged ? `${todayWorkout?.exercises.length ?? 0} exercises - ${calculateTotalSets(todayWorkout?.exercises ?? [])} sets` : "Not started"}
+              detail={workoutLogged ? `${calculateTotalVolume(todayWorkout?.exercises ?? [])} kg total volume` : undefined}
+              progress={workoutLogged ? 100 : 0}
+              action={workoutLogged ? undefined : "Start Workout"}
+              onAction={workoutLogged ? undefined : () => changeMemberSection("Add Workout")}
+            />
+            <StatusMetric
+              icon="utensils"
+              title="Meals"
+              value={`${mealsLogged}/4 logged`}
+              progress={Math.min(mealsLogged * 25, 100)}
+            />
+          </div>
+        </section>
+
+        <RecentActivity
+          items={recentPortalActivity}
+          onWorkout={() => changeMemberSection("Add Workout")}
+          onMeal={() => changeMemberSection("Meal Log")}
+        />
       </div>
     );
   }
@@ -1535,12 +1648,11 @@ export default function MemberPortalContent() {
           }
         }
       `}</style>
-      <header className="sticky top-0 z-30 -mx-4 flex h-14 items-center justify-between border-b border-white/10 bg-[#0a0d0b]/95 px-4 backdrop-blur-xl md:hidden">
+      <header className={`${activeSection === "Dashboard" ? "hidden" : "sticky"} top-0 z-30 -mx-4 h-14 items-center justify-between border-b border-white/10 bg-[#0a0d0b]/95 px-4 backdrop-blur-xl md:hidden ${activeSection === "Dashboard" ? "" : "flex"}`}>
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-lime-400 text-xs font-black text-[#07100b]">GB</span>
           <div className="min-w-0">
             <p className="truncate text-base font-black text-white">{mobilePageTitle()}</p>
-            <p className="truncate text-xs font-semibold text-zinc-500">Amit</p>
           </div>
         </div>
         <button type="button" onClick={() => changeMemberSection("Profile")} className="grid h-8 w-8 place-items-center rounded-full border border-lime-300/20 bg-lime-300/10 text-xs font-black text-lime-100">
