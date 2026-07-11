@@ -279,11 +279,11 @@ const emptyProfile: ProfileForm = {
 };
 
 function inputClass() {
-  return "h-11 w-full rounded-lg border border-white/10 bg-black/25 px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60 md:h-11";
+  return "h-11 w-full rounded-lg border border-white/10 bg-black/25 px-3 text-[15px] font-normal leading-5 text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60 md:h-11";
 }
 
 function areaClass() {
-  return "min-h-20 w-full rounded-lg border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60 md:min-h-24";
+  return "min-h-20 w-full rounded-lg border border-white/10 bg-black/25 px-3 py-3 text-[15px] font-normal leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-lime-300/60 md:min-h-24";
 }
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -293,7 +293,7 @@ function Card({ children, className = "" }: { children: ReactNode; className?: s
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">{label}</span>
+      <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-zinc-500">{label}</span>
       <div className="mt-2">{children}</div>
     </label>
   );
@@ -302,8 +302,8 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-      <p className="text-sm font-semibold text-zinc-400">{label}</p>
-      <p className="mt-2 text-2xl font-black text-white">{value}</p>
+      <p className="text-sm font-normal leading-5 text-zinc-400">{label}</p>
+      <p className="mt-2 text-[22px] font-semibold leading-tight text-white">{value}</p>
     </div>
   );
 }
@@ -459,8 +459,8 @@ function ActionButton({ children, onClick, tone = "default" }: { children: React
       onClick={onClick}
       className={
         tone === "danger"
-          ? "rounded-md border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:bg-red-300/15"
-          : "rounded-md border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-bold text-zinc-300 transition hover:border-lime-300/40 hover:text-lime-200"
+          ? "rounded-md border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-semibold text-red-200 transition hover:bg-red-300/15"
+          : "rounded-md border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:border-lime-300/40 hover:text-lime-200"
       }
     >
       {children}
@@ -469,7 +469,7 @@ function ActionButton({ children, onClick, tone = "default" }: { children: React
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <p className="rounded-lg border border-white/10 bg-white/[0.035] p-4 text-sm font-semibold text-zinc-500">{text}</p>;
+  return <p className="rounded-lg border border-white/10 bg-white/[0.035] p-4 text-sm font-normal leading-5 text-zinc-500">{text}</p>;
 }
 
 function MobileNavGlyph({ icon }: { icon: MobileNavIcon }) {
@@ -1125,7 +1125,7 @@ export default function MemberPortalContent() {
     return (
       <div className="space-y-3 pb-16 md:space-y-6 md:pb-0">
         <div className="rounded-lg border border-white/10 bg-[#111713] px-3.5 py-2.5 md:hidden">
-          <p className="text-sm font-black text-white">
+          <p className="text-sm font-semibold leading-5 text-white">
             {workoutSession.exercises.length} exercises &bull; {currentTotalSets} sets &bull; {currentTotalVolume} kg volume
           </p>
           <p className="mt-0.5 text-xs font-medium text-zinc-500">{currentCompletedSets} completed sets</p>
@@ -1152,9 +1152,9 @@ export default function MemberPortalContent() {
               <Field label="Date"><input type="date" value={workoutSession.date} onChange={(event) => setWorkoutSession((current) => ({ ...current, date: event.target.value }))} className={inputClass()} /></Field>
               <div className="hidden md:block"><Field label="Notes"><input value={workoutSession.notes} onChange={(event) => setWorkoutSession((current) => ({ ...current, notes: event.target.value }))} placeholder="Session notes" className={inputClass()} /></Field></div>
             </div>
-            <button type="button" onClick={openAddExerciseModal} className="hidden h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] md:block">Add Exercise</button>
+            <button type="button" onClick={openAddExerciseModal} className="hidden h-11 rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b] md:block">Add Exercise</button>
             <div className="md:hidden">
-              <button type="button" onClick={() => setWorkoutNotesOpen((current) => !current)} className="text-sm font-black text-lime-300">
+              <button type="button" onClick={() => setWorkoutNotesOpen((current) => !current)} className="text-sm font-semibold text-lime-300">
                 {workoutNotesOpen ? "Hide workout notes" : "Add workout notes"}
               </button>
               {workoutNotesOpen ? (
@@ -1171,7 +1171,7 @@ export default function MemberPortalContent() {
             <Card key={exercise.id} className="relative">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="pr-11 md:pr-0">
-                  <h3 className="text-base font-semibold leading-snug text-white md:text-xl md:font-black">{exercise.name}</h3>
+                  <h3 className="text-base font-semibold leading-snug text-white md:text-[18px]">{exercise.name}</h3>
                   <p className="mt-0.5 text-sm font-normal leading-5 text-zinc-400">{exercise.muscle} - {exercise.equipment}</p>
                 </div>
                 <div className="hidden flex-wrap gap-2 md:flex">
@@ -1179,14 +1179,14 @@ export default function MemberPortalContent() {
                   <ActionButton tone="danger" onClick={() => removeWorkoutExercise(exercise.id)}>Remove</ActionButton>
                 </div>
                 <div className="absolute right-3 top-3 md:hidden">
-                  <button type="button" onClick={() => setExerciseMenuId((current) => (String(current) === String(exercise.id) ? null : exercise.id))} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lg font-black text-zinc-300">
+                  <button type="button" onClick={() => setExerciseMenuId((current) => (String(current) === String(exercise.id) ? null : exercise.id))} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-lg font-semibold text-zinc-300">
                     ...
                   </button>
                   {String(exerciseMenuId) === String(exercise.id) ? (
                     <div className="absolute right-0 top-11 z-20 grid w-40 gap-1 rounded-lg border border-[#dfe5d8] bg-white p-2 shadow-xl shadow-black/10">
-                      <button type="button" onClick={() => { setExerciseNoteId(exercise.id); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-[#172018]">Add Note</button>
-                      <button type="button" onClick={() => { duplicateWorkoutExercise(exercise); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-[#172018]">Duplicate Exercise</button>
-                      <button type="button" onClick={() => { removeWorkoutExercise(exercise.id); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-bold text-red-500">Remove Exercise</button>
+                      <button type="button" onClick={() => { setExerciseNoteId(exercise.id); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-semibold text-[#172018]">Add Note</button>
+                      <button type="button" onClick={() => { duplicateWorkoutExercise(exercise); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-semibold text-[#172018]">Duplicate Exercise</button>
+                      <button type="button" onClick={() => { removeWorkoutExercise(exercise.id); setExerciseMenuId(null); }} className="rounded-md px-3 py-2 text-left text-xs font-semibold text-red-500">Remove Exercise</button>
                     </div>
                   ) : null}
                 </div>
@@ -1200,7 +1200,7 @@ export default function MemberPortalContent() {
                 </div>
               ) : null}
               <div className="mt-4 grid gap-2 md:mt-5">
-                <div className="grid grid-cols-[28px_minmax(52px,0.85fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-1 text-[10px] font-bold uppercase tracking-[0.04em] text-zinc-500 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] md:gap-2 md:text-xs md:tracking-[0.12em]">
+                <div className="grid grid-cols-[28px_minmax(52px,0.85fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-1 text-[12px] font-medium uppercase tracking-[0.04em] text-zinc-500 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] md:gap-2 md:tracking-[0.08em]">
                   <span>Set</span>
                   <span className="md:hidden">Previous</span>
                   <span>Kg</span>
@@ -1211,7 +1211,7 @@ export default function MemberPortalContent() {
                 </div>
                 {exercise.sets.map((set, index) => (
                   <div key={set.id} className="grid grid-cols-[28px_minmax(52px,0.85fr)_minmax(0,1fr)_minmax(0,1fr)_32px] items-center gap-1 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] md:gap-2">
-                    <p className="text-sm font-black text-white">{index + 1}</p>
+                    <p className="text-sm font-semibold text-white">{index + 1}</p>
                     <p className="truncate text-xs font-semibold text-zinc-500 md:hidden">
                       {index > 0 ? `${exercise.sets[index - 1].weight || "-"}x${exercise.sets[index - 1].reps || "-"}` : "-"}
                     </p>
@@ -1222,27 +1222,27 @@ export default function MemberPortalContent() {
                       <span className="sr-only">Mark set {index + 1} complete</span>
                       <input type="checkbox" checked={set.completed} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { completed: event.target.checked })} className="h-5 w-5 accent-lime-400" />
                     </label>
-                    <button type="button" onClick={() => removeSetFromExercise(exercise.id, set.id)} className="hidden h-9 rounded-lg border border-red-300/20 bg-red-300/10 text-xs font-black text-red-200 md:block">-</button>
+                    <button type="button" onClick={() => removeSetFromExercise(exercise.id, set.id)} className="hidden h-9 rounded-lg border border-red-300/20 bg-red-300/10 text-xs font-semibold text-red-200 md:block">-</button>
                   </div>
                 ))}
               </div>
-              <button type="button" onClick={() => addSetToExercise(exercise.id)} className="mt-3 h-11 rounded-lg border border-lime-500/30 bg-lime-400/20 px-4 text-sm font-semibold text-[#172018] md:mt-4 md:h-10 md:font-black md:text-lime-100">Add Set</button>
+              <button type="button" onClick={() => addSetToExercise(exercise.id)} className="mt-3 h-11 rounded-lg border border-lime-500/30 bg-lime-400/20 px-4 text-sm font-semibold text-[#172018] md:mt-4 md:h-10 md:text-lime-100">Add Set</button>
             </Card>
           )) : <EmptyState text="No exercises selected yet. Add exercises to build your workout." />}
         </div>
 
-        <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="hidden h-12 w-full rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60 md:block">
+        <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="hidden h-12 w-full rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60 md:block">
           {workoutSaving ? "Saving..." : "Save Workout"}
         </button>
         <div className="member-mobile-actionbar fixed inset-x-0 bottom-[calc(4.05rem+env(safe-area-inset-bottom))] z-30 grid grid-cols-2 gap-2 border-t border-white/10 bg-[#0b0f0d]/95 px-4 py-2 backdrop-blur-xl md:hidden">
-          <button type="button" onClick={openAddExerciseModal} className="h-11 rounded-lg border-2 border-lime-400 bg-white text-sm font-black text-[#172018] shadow-sm">+ Exercise</button>
-          <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="h-11 rounded-lg bg-lime-400 text-sm font-black text-[#07100b] shadow-sm disabled:cursor-not-allowed disabled:bg-[#dce4d6] disabled:text-[#7b8678]">
+          <button type="button" onClick={openAddExerciseModal} className="h-11 rounded-lg border-2 border-lime-400 bg-white text-sm font-semibold text-[#172018] shadow-sm">+ Exercise</button>
+          <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="h-11 rounded-lg bg-lime-400 text-sm font-semibold text-[#07100b] shadow-sm disabled:cursor-not-allowed disabled:bg-[#dce4d6] disabled:text-[#7b8678]">
             {workoutSaving ? "Saving..." : "Finish Workout"}
           </button>
         </div>
 
         <Card>
-          <h2 className="text-xl font-black text-white">Workout History</h2>
+          <h2 className="text-[18px] font-semibold leading-6 text-white">Workout History</h2>
           <div className="mt-5 grid gap-3">
             {workoutsLoading ? <EmptyState text="Loading workout history..." /> : null}
             {!workoutsLoading && savedWorkouts.length ? savedWorkouts.map((session) => (
@@ -1253,14 +1253,14 @@ export default function MemberPortalContent() {
                     onClick={() => setSavedWorkouts((current) => current.map((item) => (String(item.id) === String(session.id) ? { ...item, expanded: !item.expanded } : item)))}
                     className="min-w-0 flex-1 text-left"
                   >
-                    <span className="block font-black text-white">{session.name}</span>
+                    <span className="block text-base font-semibold text-white">{session.name}</span>
                     <span className="mt-1 block text-sm text-zinc-400">{session.date} - {session.exercises.length} exercises - {calculateTotalSets(session.exercises)} sets - {calculateTotalVolume(session.exercises)} kg</span>
                   </button>
                   <div className="flex shrink-0 items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setSavedWorkouts((current) => current.map((item) => (String(item.id) === String(session.id) ? { ...item, expanded: !item.expanded } : item)))}
-                      className="rounded-md border border-lime-300/20 bg-lime-300/10 px-3 py-2 text-xs font-black text-lime-100"
+                      className="rounded-md border border-lime-300/20 bg-lime-300/10 px-3 py-2 text-xs font-semibold text-lime-100"
                     >
                       {session.expanded ? "Hide" : "View"}
                     </button>
@@ -1268,7 +1268,7 @@ export default function MemberPortalContent() {
                       type="button"
                       onClick={() => removeSavedWorkout(session.id)}
                       disabled={String(workoutDeletingId) === String(session.id)}
-                      className="rounded-md border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-black text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-md border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {String(workoutDeletingId) === String(session.id) ? "Deleting..." : "Delete"}
                     </button>
@@ -1278,7 +1278,7 @@ export default function MemberPortalContent() {
                   <div className="mt-4 grid gap-3 border-t border-white/10 pt-4">
                     {session.exercises.map((exercise) => (
                       <div key={exercise.id} className="rounded-lg bg-black/20 p-3">
-                        <p className="font-bold text-white">{exercise.name}</p>
+                        <p className="text-[15px] font-semibold leading-5 text-white">{exercise.name}</p>
                         <p className="mt-1 text-sm text-zinc-400">{exercise.sets.length} sets - {calculateTotalVolume([exercise])} kg volume</p>
                       </div>
                     ))}
@@ -1294,18 +1294,18 @@ export default function MemberPortalContent() {
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm md:grid md:place-items-center md:px-4 md:py-6">
             <section className="flex h-full w-full flex-col bg-[#101511] md:h-[86vh] md:max-w-2xl md:overflow-hidden md:rounded-lg md:border md:border-white/10 md:shadow-2xl md:shadow-black">
               <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#101511] px-4">
-                <button type="button" onClick={() => { setSelectedExerciseIds([]); setExerciseModalOpen(false); }} className="text-sm font-black text-zinc-300">Cancel</button>
-                <h2 className="text-base font-black text-white">Add Exercise</h2>
-                <button type="button" onClick={addSelectedExercisesToSession} disabled={!selectedExerciseIds.length} className="text-sm font-black text-lime-300 disabled:cursor-not-allowed disabled:text-zinc-500">
+                <button type="button" onClick={() => { setSelectedExerciseIds([]); setExerciseModalOpen(false); }} className="text-sm font-semibold text-zinc-300">Cancel</button>
+                <h2 className="text-base font-semibold text-white">Add Exercise</h2>
+                <button type="button" onClick={addSelectedExercisesToSession} disabled={!selectedExerciseIds.length} className="text-sm font-semibold text-lime-300 disabled:cursor-not-allowed disabled:text-zinc-500">
                   {selectedExerciseIds.length ? `Add (${selectedExerciseIds.length})` : "Add"}
                 </button>
               </header>
               <div className="shrink-0 space-y-2.5 border-b border-white/10 p-3.5">
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">Search</span>
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-500">Search</span>
                   <input value={exerciseSearch} onChange={(event) => setExerciseSearch(event.target.value)} placeholder="Exercise name" className={`${inputClass()} h-10 pl-16 pr-10`} />
                   {exerciseSearch ? (
-                    <button type="button" onClick={() => setExerciseSearch("")} className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-md text-sm font-black text-zinc-500">
+                    <button type="button" onClick={() => setExerciseSearch("")} className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-md text-sm font-semibold text-zinc-500">
                       x
                     </button>
                   ) : null}
@@ -1328,12 +1328,12 @@ export default function MemberPortalContent() {
                           selected ? "border-lime-300/50 bg-lime-300/10" : "border-white/10 bg-white/[0.035] hover:border-lime-300/30"
                         }`}
                       >
-                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#172018] text-xs font-black text-lime-300">{exercise.imagePlaceholder}</span>
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#172018] text-xs font-semibold text-lime-300">{exercise.imagePlaceholder}</span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[15px] font-semibold leading-5 text-white">{exercise.name}</span>
                           <span className="mt-0.5 block truncate text-sm font-normal text-zinc-400">{exercise.muscle} - {exercise.equipment}</span>
                         </span>
-                        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border text-sm font-black ${selected ? "border-lime-400 bg-lime-400 text-[#07100b]" : "border-[#dfe5d8] bg-white text-[#172018]"}`}>{selected ? "OK" : "+"}</span>
+                        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border text-sm font-semibold ${selected ? "border-lime-400 bg-lime-400 text-[#07100b]" : "border-[#dfe5d8] bg-white text-[#172018]"}`}>{selected ? "OK" : "+"}</span>
                       </button>
                     );
                   })}
@@ -1349,7 +1349,7 @@ export default function MemberPortalContent() {
   function renderMealLog() {
     return (
       <div className="space-y-3 md:space-y-6">
-        <button type="button" onClick={() => document.getElementById("member-add-meal")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-11 w-full rounded-lg bg-lime-400 text-sm font-black text-[#07100b] md:hidden">+ Add Meal</button>
+        <button type="button" onClick={() => document.getElementById("member-add-meal")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-11 w-full rounded-lg bg-lime-400 text-sm font-semibold text-[#07100b] md:hidden">+ Add Meal</button>
         <div className="grid grid-cols-3 gap-2 md:grid-cols-3 md:gap-4">
           <MiniMetric label="Total Calories" value={String(mealTotals.calories)} />
           <MiniMetric label="Total Protein" value={`${mealTotals.protein}g`} />
@@ -1358,7 +1358,7 @@ export default function MemberPortalContent() {
         <div className="grid gap-3 md:gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
           <Card className="scroll-mt-20" >
             <div id="member-add-meal" />
-            <h2 className="text-xl font-black text-white">{editingMealId ? "Edit Meal" : "Add Meal"}</h2>
+            <h2 className="text-[18px] font-semibold leading-6 text-white">{editingMealId ? "Edit Meal" : "Add Meal"}</h2>
             <div className="mt-4 grid gap-3 md:mt-5 md:gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Date"><input type="date" value={mealForm.date} onChange={(event) => setMealForm((current) => ({ ...current, date: event.target.value }))} className={inputClass()} /></Field>
@@ -1372,19 +1372,19 @@ export default function MemberPortalContent() {
                 <Field label="Protein"><input value={mealForm.protein} onChange={(event) => setMealForm((current) => ({ ...current, protein: event.target.value }))} className={inputClass()} /></Field>
               </div>
               <Field label="Notes"><textarea value={mealForm.notes} onChange={(event) => setMealForm((current) => ({ ...current, notes: event.target.value }))} className={areaClass()} /></Field>
-              <button type="button" onClick={saveMeal} className="h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b]">{editingMealId ? "Update Meal" : "Add Meal"}</button>
+              <button type="button" onClick={saveMeal} className="h-11 rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b]">{editingMealId ? "Update Meal" : "Add Meal"}</button>
             </div>
           </Card>
           <Card>
-            <h2 className="text-xl font-black text-white">Meal History</h2>
+            <h2 className="text-[18px] font-semibold leading-6 text-white">Meal History</h2>
             <div className="mt-5 grid gap-3">
               {meals.length ? meals.map((entry) => (
                 <div key={entry.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-3 md:p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="font-black text-white">{entry.food}</p>
+                      <p className="text-[15px] font-semibold leading-5 text-white">{entry.food}</p>
                       <p className="mt-1 text-sm text-zinc-400">{entry.date} {entry.time} - {entry.type} - {entry.quantity}</p>
-                      <p className="mt-1 text-sm font-bold text-lime-200">{entry.calories || 0} cal - {entry.protein || 0}g protein</p>
+                      <p className="mt-1 text-sm font-medium text-lime-200">{entry.calories || 0} cal - {entry.protein || 0}g protein</p>
                     </div>
                     <div className="flex gap-2">
                       <ActionButton onClick={() => editMeal(entry)}>Edit</ActionButton>
@@ -1405,7 +1405,7 @@ export default function MemberPortalContent() {
     const bodyFatChange = latestProgress && previousProgress ? Number(latestProgress.bodyFat || 0) - Number(previousProgress.bodyFat || 0) : 0;
     return (
       <div className="space-y-3 md:space-y-6">
-        <button type="button" onClick={() => document.getElementById("member-add-progress")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-11 w-full rounded-lg bg-lime-400 text-sm font-black text-[#07100b] md:hidden">+ Add Progress</button>
+        <button type="button" onClick={() => document.getElementById("member-add-progress")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-11 w-full rounded-lg bg-lime-400 text-sm font-semibold text-[#07100b] md:hidden">+ Add Progress</button>
         <div className="grid grid-cols-3 gap-2 md:grid-cols-4 md:gap-4">
           <MiniMetric label="Latest Weight" value={`${latestProgress?.weight ?? "-"} kg`} />
           <MiniMetric label="Latest Body Fat" value={`${latestProgress?.bodyFat ?? "-"}%`} />
@@ -1415,7 +1415,7 @@ export default function MemberPortalContent() {
         <div className="grid gap-3 md:gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
           <Card className="scroll-mt-20">
             <div id="member-add-progress" />
-            <h2 className="text-xl font-black text-white">{editingProgressId ? "Edit Progress" : "Add Progress"}</h2>
+            <h2 className="text-[18px] font-semibold leading-6 text-white">{editingProgressId ? "Edit Progress" : "Add Progress"}</h2>
             <div className="mt-4 grid gap-3 md:mt-5 md:gap-4">
               <Field label="Date"><input type="date" value={progressForm.date} onChange={(event) => setProgressForm((current) => ({ ...current, date: event.target.value }))} className={inputClass()} /></Field>
               <div className="grid grid-cols-2 gap-3">
@@ -1426,17 +1426,17 @@ export default function MemberPortalContent() {
                 <Field label="Arms"><input value={progressForm.arms} onChange={(event) => setProgressForm((current) => ({ ...current, arms: event.target.value }))} className={inputClass()} /></Field>
               </div>
               <Field label="Notes"><textarea value={progressForm.notes} onChange={(event) => setProgressForm((current) => ({ ...current, notes: event.target.value }))} className={areaClass()} /></Field>
-              <button type="button" onClick={saveProgress} className="h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b]">{editingProgressId ? "Update Progress" : "Add Progress"}</button>
+              <button type="button" onClick={saveProgress} className="h-11 rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b]">{editingProgressId ? "Update Progress" : "Add Progress"}</button>
             </div>
           </Card>
           <Card>
-            <h2 className="text-xl font-black text-white">Progress History</h2>
+            <h2 className="text-[18px] font-semibold leading-6 text-white">Progress History</h2>
             <div className="mt-5 grid gap-3">
               {progressEntries.map((entry) => (
                 <div key={entry.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-3 md:p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="font-black text-white">{entry.date}</p>
+                      <p className="text-[15px] font-semibold leading-5 text-white">{entry.date}</p>
                       <p className="mt-1 text-sm text-zinc-400">{entry.weight} kg - {entry.bodyFat}% body fat - Waist {entry.waist}</p>
                     </div>
                     <div className="flex gap-2">
@@ -1456,32 +1456,32 @@ export default function MemberPortalContent() {
   function renderPhotos() {
     return (
       <div className="space-y-3 md:space-y-6">
-        <button type="button" onClick={() => document.getElementById("member-upload-photo")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-11 w-full rounded-lg bg-lime-400 text-sm font-black text-[#07100b] md:hidden">Upload Photo</button>
+        <button type="button" onClick={() => document.getElementById("member-upload-photo")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-11 w-full rounded-lg bg-lime-400 text-sm font-semibold text-[#07100b] md:hidden">Upload Photo</button>
         <div className="grid gap-3 md:gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
           <Card className="scroll-mt-20">
             <div id="member-upload-photo" />
-            <h2 className="text-xl font-black text-white">Upload Progress Photo</h2>
+            <h2 className="text-[18px] font-semibold leading-6 text-white">Upload Progress Photo</h2>
             <div className="mt-4 grid gap-3 md:mt-5 md:gap-4">
               <Field label="Photo Type"><select value={photoType} onChange={(event) => setPhotoType(event.target.value as PhotoType)} className={inputClass()}>{photoTypes.map((type) => <option key={type}>{type}</option>)}</select></Field>
               <Field label="Date"><input type="date" value={photoDate} onChange={(event) => setPhotoDate(event.target.value)} className={inputClass()} /></Field>
               <Field label="Notes"><textarea value={photoNotes} onChange={(event) => setPhotoNotes(event.target.value)} className={areaClass()} /></Field>
-              <Field label="File Upload"><input type="file" accept="image/*" onChange={(event) => addPhoto(event.target.files?.[0] ?? null)} className="w-full rounded-lg border border-white/10 bg-black/25 px-3 py-3 text-sm text-zinc-300 file:mr-3 file:rounded-md file:border-0 file:bg-lime-400 file:px-3 file:py-2 file:text-sm file:font-black file:text-[#07100b]" /></Field>
-              <button type="button" className="h-11 rounded-lg border border-lime-300/30 bg-lime-300/10 px-5 text-sm font-black text-lime-100">Compare Photos</button>
+              <Field label="File Upload"><input type="file" accept="image/*" onChange={(event) => addPhoto(event.target.files?.[0] ?? null)} className="w-full rounded-lg border border-white/10 bg-black/25 px-3 py-3 text-sm text-zinc-300 file:mr-3 file:rounded-md file:border-0 file:bg-lime-400 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#07100b]" /></Field>
+              <button type="button" className="h-11 rounded-lg border border-lime-300/30 bg-lime-300/10 px-5 text-sm font-semibold text-lime-100">Compare Photos</button>
             </div>
           </Card>
           <div className="grid gap-4">
             {photoTypes.map((type) => (
               <Card key={type}>
-                <h3 className="text-lg font-black text-white">{type} Photos</h3>
+                <h3 className="text-base font-semibold leading-6 text-white">{type} Photos</h3>
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {photos.filter((photo) => photo.type === type).length ? photos.filter((photo) => photo.type === type).map((photo) => (
                     <article key={photo.id} className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.035]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={photo.url} alt={`${photo.type} progress`} className="aspect-[4/3] w-full object-cover" />
                       <div className="p-3">
-                        <p className="font-bold text-white">{photo.date}</p>
+                        <p className="text-sm font-semibold text-white">{photo.date}</p>
                         <p className="mt-1 text-sm text-zinc-400">{photo.notes || photo.fileName}</p>
-                        <button type="button" onClick={() => deletePhoto(photo)} className="mt-3 rounded-md border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-bold text-red-200">Delete</button>
+                        <button type="button" onClick={() => deletePhoto(photo)} className="mt-3 rounded-md border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-semibold text-red-200">Delete</button>
                       </div>
                     </article>
                   )) : <EmptyState text={`No ${type.toLowerCase()} photos yet.`} />}
@@ -1498,7 +1498,7 @@ export default function MemberPortalContent() {
     return (
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
-          <h2 className="text-xl font-black text-white">Membership</h2>
+          <h2 className="text-[18px] font-semibold leading-6 text-white">Membership</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {[
               ["Plan Name", "Not available"],
@@ -1510,15 +1510,15 @@ export default function MemberPortalContent() {
               ["Branch", "Not available"],
             ].map(([label, value]) => (
               <div key={label} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">{label}</p>
-                <p className="mt-2 font-black text-white">{value}</p>
+                <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-zinc-500">{label}</p>
+                <p className="mt-2 text-[15px] font-semibold leading-5 text-white">{value}</p>
               </div>
             ))}
           </div>
-          <button type="button" className="mt-5 h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b]">Renew Membership</button>
+          <button type="button" className="mt-5 h-11 rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b]">Renew Membership</button>
         </Card>
         <Card>
-          <h2 className="text-xl font-black text-white">Timeline</h2>
+          <h2 className="text-[18px] font-semibold leading-6 text-white">Timeline</h2>
           <div className="mt-5 space-y-4">
             <EmptyState text="No membership timeline available yet." />
           </div>
@@ -1530,7 +1530,7 @@ export default function MemberPortalContent() {
   function renderProfile() {
     return (
       <Card className="max-w-3xl">
-        <h2 className="text-xl font-black text-white">Profile</h2>
+        <h2 className="text-[18px] font-semibold leading-6 text-white">Profile</h2>
         {profileLoading ? <p className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2 text-sm font-semibold text-zinc-400">Loading profile...</p> : null}
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="Full Name"><input value={profile.fullName} onChange={(event) => setProfile((current) => ({ ...current, fullName: event.target.value }))} className={inputClass()} /></Field>
@@ -1547,7 +1547,7 @@ export default function MemberPortalContent() {
           type="button"
           onClick={saveProfileToSupabase}
           disabled={profileSaving || profileLoading}
-          className="mt-5 h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b] disabled:cursor-not-allowed disabled:opacity-70"
+          className="mt-5 h-11 rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {profileSaving ? "Saving..." : "Save Profile"}
         </button>
@@ -1566,32 +1566,32 @@ export default function MemberPortalContent() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-6">
           <Card>
-            <h2 className="text-xl font-black text-white">Contact</h2>
+            <h2 className="text-[18px] font-semibold leading-6 text-white">Contact</h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <p className="font-black text-white">Trainer not assigned</p>
+                <p className="text-[15px] font-semibold leading-5 text-white">Trainer not assigned</p>
                 <p className="mt-1 text-sm text-zinc-400">Assigned Trainer</p>
-                <p className="mt-3 text-sm font-bold text-lime-200">Contact not available</p>
+                <p className="mt-3 text-sm font-medium text-lime-200">Contact not available</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <p className="font-black text-white">Gym contact unavailable</p>
+                <p className="text-[15px] font-semibold leading-5 text-white">Gym contact unavailable</p>
                 <p className="mt-1 text-sm text-zinc-400">Gym Contact</p>
-                <p className="mt-3 text-sm font-bold text-lime-200">Not available</p>
+                <p className="mt-3 text-sm font-medium text-lime-200">Not available</p>
               </div>
             </div>
           </Card>
           <Card>
-            <h2 className="text-xl font-black text-white">Message</h2>
+            <h2 className="text-[18px] font-semibold leading-6 text-white">Message</h2>
             <textarea value={supportMessage} onChange={(event) => setSupportMessage(event.target.value)} placeholder="Write your message..." className={`mt-5 ${areaClass()}`} />
-            <button type="button" className="mt-4 h-11 rounded-lg bg-lime-400 px-5 text-sm font-black text-[#07100b]">Submit</button>
+            <button type="button" className="mt-4 h-11 rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b]">Submit</button>
           </Card>
         </div>
         <Card>
-          <h2 className="text-xl font-black text-white">FAQ</h2>
+          <h2 className="text-[18px] font-semibold leading-6 text-white">FAQ</h2>
           <div className="mt-5 grid gap-3">
             {faqs.map(([question, answer], index) => (
               <div key={question} className="rounded-lg border border-white/10 bg-white/[0.035]">
-                <button type="button" onClick={() => setOpenFaq(openFaq === index ? null : index)} className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left font-bold text-white">
+                <button type="button" onClick={() => setOpenFaq(openFaq === index ? null : index)} className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-[15px] font-semibold leading-5 text-white">
                   {question}
                   <span className="text-lime-300">{openFaq === index ? "-" : "+"}</span>
                 </button>
@@ -1645,7 +1645,7 @@ export default function MemberPortalContent() {
           .member-mobile-theme {
             background: #f6f7f4;
             color: #172018;
-            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           }
 
           .member-mobile-theme section[class*="bg-[#111713]"],
@@ -1701,12 +1701,12 @@ export default function MemberPortalContent() {
       `}</style>
       <header className={`${activeSection === "Dashboard" ? "hidden" : "sticky"} top-0 z-30 -mx-4 h-14 items-center justify-between border-b border-white/10 bg-[#0a0d0b]/95 px-4 backdrop-blur-xl md:hidden ${activeSection === "Dashboard" ? "" : "flex"}`}>
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-lime-400 text-xs font-black text-[#07100b]">GB</span>
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-lime-400 text-xs font-semibold text-[#07100b]">GB</span>
           <div className="min-w-0">
-            <p className="truncate text-base font-black text-white">{mobilePageTitle()}</p>
+            <p className="truncate text-base font-semibold leading-5 text-white">{mobilePageTitle()}</p>
           </div>
         </div>
-        <button type="button" onClick={() => changeMemberSection("Profile")} className="grid h-8 w-8 place-items-center rounded-full border border-lime-300/20 bg-lime-300/10 text-xs font-black text-lime-100">
+        <button type="button" onClick={() => changeMemberSection("Profile")} className="grid h-8 w-8 place-items-center rounded-full border border-lime-300/20 bg-lime-300/10 text-xs font-semibold text-lime-100">
           A
         </button>
       </header>
@@ -1717,7 +1717,7 @@ export default function MemberPortalContent() {
               key={item}
               type="button"
               onClick={() => changeMemberSection(item)}
-              className={`rounded-lg px-3 py-3 text-left text-sm font-bold transition ${
+              className={`rounded-lg px-3 py-3 text-left text-sm font-semibold transition ${
                 activeSection === item ? "bg-lime-400 text-[#07100b]" : "text-zinc-300 hover:bg-white/[0.06] hover:text-lime-200"
               }`}
             >
@@ -1733,7 +1733,7 @@ export default function MemberPortalContent() {
               key={item}
               type="button"
               onClick={() => changeMemberSection(item)}
-              className={`shrink-0 rounded-md px-4 py-2 text-sm font-bold transition ${
+              className={`shrink-0 rounded-md px-4 py-2 text-sm font-semibold transition ${
                 activeSection === item ? "bg-lime-400 text-[#07100b]" : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
               }`}
             >
@@ -1752,7 +1752,7 @@ export default function MemberPortalContent() {
                 key={item.section}
                 type="button"
                 onClick={() => changeMemberSection(item.section)}
-                className={`grid min-w-0 place-items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-black transition ${active ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
+                className={`grid min-w-0 place-items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-semibold transition ${active ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
               >
                 <MobileNavGlyph icon={item.icon} />
                 <span className="truncate">{item.label}</span>
@@ -1762,7 +1762,7 @@ export default function MemberPortalContent() {
           <button
             type="button"
             onClick={() => setMobileMoreOpen((current) => !current)}
-            className={`grid min-w-0 place-items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-black transition ${mobileMoreNavigation.some((item) => item.section === activeSection) ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
+            className={`grid min-w-0 place-items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-semibold transition ${mobileMoreNavigation.some((item) => item.section === activeSection) ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
           >
             <MobileNavGlyph icon="menu" />
             <span>More</span>
@@ -1773,12 +1773,12 @@ export default function MemberPortalContent() {
         <div className="fixed inset-0 z-50 bg-black/60 md:hidden" onClick={() => setMobileMoreOpen(false)}>
           <section className="absolute inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] rounded-xl border border-white/10 bg-[#111713] p-3 shadow-2xl shadow-black" onClick={(event) => event.stopPropagation()}>
             <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-sm font-black text-white">More</p>
+              <p className="text-sm font-semibold text-white">More</p>
               <button type="button" onClick={() => setMobileMoreOpen(false)} className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-zinc-300">x</button>
             </div>
             <div className="grid gap-2">
               {mobileMoreNavigation.map((item) => (
-                <button key={item.section} type="button" onClick={() => changeMemberSection(item.section)} className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-white">
+                <button key={item.section} type="button" onClick={() => changeMemberSection(item.section)} className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-semibold text-white">
                   {item.label}
                 </button>
               ))}
