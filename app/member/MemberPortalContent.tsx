@@ -483,6 +483,60 @@ function EmptyState({ text }: { text: string }) {
   return <SupportingText className="rounded-lg border border-white/10 bg-white/[0.035] p-4 text-zinc-500">{text}</SupportingText>;
 }
 
+function TinyIcon({ name }: { name: "calendar" | "tag" | "spark" }) {
+  const common = {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    className: "h-4 w-4",
+    "aria-hidden": true,
+  };
+
+  if (name === "calendar") {
+    return (
+      <svg {...common}>
+        <path d="M8 2v4" />
+        <path d="M16 2v4" />
+        <path d="M3 10h18" />
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+      </svg>
+    );
+  }
+
+  if (name === "tag") {
+    return (
+      <svg {...common}>
+        <path d="M20 10 12 18l-8-8V4h6l10 10Z" />
+        <path d="M7.5 7.5h.01" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />
+      <path d="m19 17 .7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2Z" />
+    </svg>
+  );
+}
+
+function WorkoutEmptyState() {
+  return (
+    <section className="grid min-h-56 place-items-center rounded-2xl border border-[#e2e7dc] bg-white px-6 py-8 text-center shadow-[0_10px_24px_rgba(23,32,24,0.05)] md:border-white/10 md:bg-white/[0.035]">
+      <div>
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#f1f3ef] text-[#172018] md:bg-lime-300/10 md:text-lime-200">
+          <MobileNavGlyph icon="dumbbell" />
+        </div>
+        <CardTitle as="p" className="mt-4 text-[#172018] md:text-white">Build today&apos;s workout</CardTitle>
+        <SupportingText className="mx-auto mt-1 max-w-64">Add your first exercise and start logging sets as you train.</SupportingText>
+      </div>
+    </section>
+  );
+}
+
 function MobileNavGlyph({ icon }: { icon: MobileNavIcon }) {
   const common = {
     className: "h-5 w-5",
@@ -1138,19 +1192,77 @@ export default function MemberPortalContent() {
     const currentTotalVolume = calculateTotalVolume(workoutSession.exercises);
 
     return (
-      <div className="space-y-3 pb-16 md:space-y-6 md:pb-0">
-        <div className="rounded-lg border border-white/10 bg-[#111713] px-3.5 py-2.5 md:hidden">
-          <BodyText className="text-sm font-semibold leading-5">
-            {workoutSession.exercises.length} exercises &bull; {currentTotalSets} sets &bull; {currentTotalVolume} kg volume
-          </BodyText>
-          <Caption className="mt-0.5 font-medium">{currentCompletedSets} completed sets</Caption>
-        </div>
-        <div className="hidden grid-cols-2 gap-3 sm:grid-cols-4 md:grid">
-          <MiniMetric label="Exercises" value={String(workoutSession.exercises.length)} />
-          <MiniMetric label="Total Sets" value={String(currentTotalSets)} />
-          <MiniMetric label="Volume" value={`${currentTotalVolume} kg`} />
-          <MiniMetric label="Completed" value={String(currentCompletedSets)} />
-        </div>
+      <div className="space-y-3 pb-[calc(8.5rem+env(safe-area-inset-bottom))] md:space-y-6 md:pb-0">
+        <section className="space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <label className="sr-only" htmlFor="workout-name">Workout name</label>
+              <input
+                id="workout-name"
+                value={workoutSession.name}
+                onChange={(event) => setWorkoutSession((current) => ({ ...current, name: event.target.value }))}
+                placeholder="Untitled Workout"
+                className="h-12 w-full min-w-0 border-0 bg-transparent px-0 text-[26px] font-bold leading-tight text-[#172018] outline-none placeholder:text-zinc-400 md:text-3xl md:text-white"
+              />
+              <div className="mt-2 flex flex-wrap gap-2">
+                <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-[#dfe5d8] bg-white px-3 text-[#172018] md:border-white/10 md:bg-white/[0.04] md:text-zinc-200">
+                  <span className="shrink-0 text-zinc-500 md:text-lime-200"><TinyIcon name="tag" /></span>
+                  <span className="sr-only">Workout type</span>
+                  <input
+                    value={workoutSession.type}
+                    onChange={(event) => setWorkoutSession((current) => ({ ...current, type: event.target.value }))}
+                    placeholder="Training"
+                    className="h-10 min-w-0 flex-1 border-0 bg-transparent text-sm font-medium text-inherit outline-none placeholder:text-zinc-400"
+                  />
+                </label>
+                <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-[#dfe5d8] bg-white px-3 text-[#172018] md:border-white/10 md:bg-white/[0.04] md:text-zinc-200">
+                  <span className="shrink-0 text-zinc-500 md:text-lime-200"><TinyIcon name="calendar" /></span>
+                  <span className="sr-only">Workout date</span>
+                  <input
+                    type="date"
+                    value={workoutSession.date}
+                    onChange={(event) => setWorkoutSession((current) => ({ ...current, date: event.target.value }))}
+                    className="h-10 min-w-0 flex-1 border-0 bg-transparent text-sm font-medium text-inherit outline-none"
+                  />
+                </label>
+              </div>
+            </div>
+            <button type="button" onClick={openAddExerciseModal} className="hidden h-11 shrink-0 rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b] md:block">Add Exercise</button>
+          </div>
+
+          <div className="grid grid-cols-4 overflow-hidden rounded-2xl border border-[#e2e7dc] bg-white shadow-[0_10px_24px_rgba(23,32,24,0.05)] md:border-white/10 md:bg-[#111713]">
+            {[
+              ["Exercises", String(workoutSession.exercises.length)],
+              ["Sets", String(currentTotalSets)],
+              ["Volume", `${currentTotalVolume}`],
+              ["Done", String(currentCompletedSets)],
+            ].map(([label, value], index) => (
+              <div key={label} className={`px-2.5 py-3 text-center ${index ? "border-l border-[#e2e7dc] md:border-white/10" : ""}`}>
+                <MetricValue className="text-xl font-bold leading-none text-[#172018] md:text-white">{value}</MetricValue>
+                <Caption className="mt-1 truncate font-medium">{label}</Caption>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <button type="button" onClick={() => setWorkoutNotesOpen((current) => !current)} className="inline-flex min-h-11 items-center gap-2 rounded-full px-1 text-sm font-semibold text-[#46611e] md:text-lime-300">
+              <TinyIcon name="spark" />
+              {workoutNotesOpen || workoutSession.notes ? "Edit workout notes" : "Add workout notes"}
+            </button>
+            {workoutNotesOpen ? (
+              <div className="mt-2">
+                <label className="sr-only" htmlFor="workout-notes">Workout notes</label>
+                <input
+                  id="workout-notes"
+                  value={workoutSession.notes}
+                  onChange={(event) => setWorkoutSession((current) => ({ ...current, notes: event.target.value }))}
+                  placeholder="Session notes"
+                  className="h-11 w-full rounded-xl border border-[#dfe5d8] bg-white px-3 text-[15px] text-[#172018] outline-none placeholder:text-zinc-400 focus:border-lime-400 md:border-white/10 md:bg-black/25 md:text-white"
+                />
+              </div>
+            ) : null}
+          </div>
+        </section>
 
         {workoutError ? (
           <p className="rounded-lg border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-semibold text-red-100">{workoutError}</p>
@@ -1158,28 +1270,6 @@ export default function MemberPortalContent() {
         {workoutSuccess ? (
           <p className="rounded-lg border border-lime-300/20 bg-lime-300/10 px-4 py-3 text-sm font-semibold text-lime-100">{workoutSuccess}</p>
         ) : null}
-
-        <Card>
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px] lg:items-end">
-            <div className="grid gap-3 sm:grid-cols-2 md:gap-4">
-              <Field label="Workout Name"><input value={workoutSession.name} onChange={(event) => setWorkoutSession((current) => ({ ...current, name: event.target.value }))} placeholder="Push day, Leg day..." className={inputClass()} /></Field>
-              <Field label="Workout Type"><input value={workoutSession.type} onChange={(event) => setWorkoutSession((current) => ({ ...current, type: event.target.value }))} className={inputClass()} /></Field>
-              <Field label="Date"><input type="date" value={workoutSession.date} onChange={(event) => setWorkoutSession((current) => ({ ...current, date: event.target.value }))} className={inputClass()} /></Field>
-              <div className="hidden md:block"><Field label="Notes"><input value={workoutSession.notes} onChange={(event) => setWorkoutSession((current) => ({ ...current, notes: event.target.value }))} placeholder="Session notes" className={inputClass()} /></Field></div>
-            </div>
-            <button type="button" onClick={openAddExerciseModal} className="hidden h-11 rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b] md:block">Add Exercise</button>
-            <div className="md:hidden">
-              <button type="button" onClick={() => setWorkoutNotesOpen((current) => !current)} className="text-sm font-semibold text-lime-300">
-                {workoutNotesOpen ? "Hide workout notes" : "Add workout notes"}
-              </button>
-              {workoutNotesOpen ? (
-                <div className="mt-3">
-                  <Field label="Notes"><input value={workoutSession.notes} onChange={(event) => setWorkoutSession((current) => ({ ...current, notes: event.target.value }))} placeholder="Session notes" className={inputClass()} /></Field>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </Card>
 
         <div className="grid gap-4">
           {workoutSession.exercises.length ? workoutSession.exercises.map((exercise) => (
@@ -1243,7 +1333,7 @@ export default function MemberPortalContent() {
               </div>
               <button type="button" onClick={() => addSetToExercise(exercise.id)} className="mt-3 h-11 rounded-lg border border-lime-500/30 bg-lime-400/20 px-4 text-sm font-semibold text-[#172018] md:mt-4 md:h-10 md:text-lime-100">Add Set</button>
             </Card>
-          )) : <EmptyState text="No exercises selected yet. Add exercises to build your workout." />}
+          )) : <WorkoutEmptyState />}
         </div>
 
         <button type="button" onClick={saveWorkoutSession} disabled={!workoutSession.exercises.length || workoutSaving} className="hidden h-12 w-full rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b] disabled:cursor-not-allowed disabled:opacity-60 md:block">
