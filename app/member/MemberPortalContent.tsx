@@ -1,6 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  BodyText,
+  Caption,
+  CardTitle,
+  LabelText,
+  MetricValue,
+  PageSubtitle,
+  PageTitle,
+  SectionTitle,
+  SupportingText,
+} from "@/components/ui/typography";
 import { DEMO_MEMBER_ID } from "../../lib/memberPortalMockContext";
 import {
   addWorkoutSession,
@@ -293,7 +304,7 @@ function Card({ children, className = "" }: { children: ReactNode; className?: s
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-zinc-500">{label}</span>
+      <Caption as="span" className="font-medium uppercase tracking-[0.08em]">{label}</Caption>
       <div className="mt-2">{children}</div>
     </label>
   );
@@ -302,8 +313,8 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-      <p className="text-sm font-normal leading-5 text-zinc-400">{label}</p>
-      <p className="mt-2 text-[22px] font-semibold leading-tight text-white">{value}</p>
+      <SupportingText>{label}</SupportingText>
+      <MetricValue className="mt-2 font-semibold">{value}</MetricValue>
     </div>
   );
 }
@@ -312,8 +323,8 @@ function MemberHomeHeader({ name, onProfile }: { name: string; onProfile: () => 
   return (
     <header className="flex items-center justify-between gap-4 pt-1">
       <div className="min-w-0">
-        <h1 className="truncate text-[26px] font-bold leading-tight tracking-normal text-white md:text-3xl">Hello, {name}</h1>
-        <p className="mt-1 text-sm font-normal leading-5 text-zinc-400">Ready to make today count?</p>
+        <PageTitle className="truncate text-[26px] md:text-3xl">Hello, {name}</PageTitle>
+        <PageSubtitle className="mt-1">Ready to make today count?</PageSubtitle>
       </div>
       <button
         type="button"
@@ -334,8 +345,8 @@ function TodayProgressCard({ completedGoals, totalGoals }: { completedGoals: num
     <section className="rounded-xl border border-[#e2e7dc] bg-white p-4 shadow-[0_10px_24px_rgba(23,32,24,0.06)]">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-normal text-zinc-400">Today&apos;s Progress</p>
-          <p className="mt-1 text-[28px] font-bold leading-none text-[#172018]">{progress}%</p>
+          <SupportingText>Today&apos;s Progress</SupportingText>
+          <MetricValue className="mt-1 text-[28px] leading-none text-[#172018]">{progress}%</MetricValue>
         </div>
         <p className="rounded-full bg-[#f1f3ef] px-3 py-1 text-xs font-semibold text-zinc-500">
           {completedGoals} of {totalGoals} goals completed
@@ -372,8 +383,8 @@ function StatusMetric({
           <MobileNavGlyph icon={icon} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-semibold leading-5 text-[#172018]">{title}</p>
-          <p className="mt-0.5 truncate text-sm font-normal text-zinc-400">{value}</p>
+          <CardTitle as="p" className="text-[15px] text-[#172018]">{title}</CardTitle>
+          <SupportingText className="mt-0.5 truncate">{value}</SupportingText>
         </div>
         {action && onAction ? (
           <button
@@ -385,7 +396,7 @@ function StatusMetric({
           </button>
         ) : null}
       </div>
-      {detail ? <p className="mt-3 text-sm font-normal leading-5 text-zinc-400">{detail}</p> : null}
+      {detail ? <SupportingText className="mt-3">{detail}</SupportingText> : null}
       {typeof progress === "number" ? (
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eef1eb]">
           <div className="h-full rounded-full bg-lime-400" style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }} />
@@ -408,8 +419,8 @@ function EmptyActivityState({ onWorkout, onMeal }: { onWorkout: () => void; onMe
       <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-[#f1f3ef] text-zinc-500">
         <MobileNavGlyph icon="trending" />
       </div>
-      <p className="mt-3 text-[15px] font-semibold text-[#172018]">Your fitness journey starts here.</p>
-      <p className="mx-auto mt-1 max-w-64 text-sm font-normal leading-5 text-zinc-400">Log your first workout or meal to see activity.</p>
+      <CardTitle as="p" className="mt-3 text-[15px] text-[#172018]">Your fitness journey starts here.</CardTitle>
+      <SupportingText className="mx-auto mt-1 max-w-64">Log your first workout or meal to see activity.</SupportingText>
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button type="button" onClick={onWorkout} className="min-h-11 rounded-full bg-lime-400 px-4 text-sm font-semibold text-[#07100b]">Workout</button>
         <button type="button" onClick={onMeal} className="min-h-11 rounded-full border border-[#dfe5d8] bg-white px-4 text-sm font-semibold text-[#172018]">Meal</button>
@@ -429,7 +440,7 @@ function RecentActivity({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold leading-6 text-white">Recent Activity</h2>
+      <SectionTitle>Recent Activity</SectionTitle>
       {items.length ? (
         <div className="grid gap-2">
           {items.map((item) => (
@@ -438,8 +449,8 @@ function RecentActivity({
                 <MobileNavGlyph icon={item.action.includes("Meal") ? "utensils" : item.action.includes("Workout") ? "dumbbell" : "trending"} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-semibold text-[#172018]">{item.action}</p>
-                <p className="truncate text-sm font-normal text-zinc-400">{item.detail}</p>
+                <CardTitle as="p" className="truncate text-[15px] text-[#172018]">{item.action}</CardTitle>
+                <SupportingText className="truncate">{item.detail}</SupportingText>
               </div>
               <p className="shrink-0 text-xs font-normal text-zinc-500">{item.time}</p>
             </article>
@@ -469,7 +480,7 @@ function ActionButton({ children, onClick, tone = "default" }: { children: React
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <p className="rounded-lg border border-white/10 bg-white/[0.035] p-4 text-sm font-normal leading-5 text-zinc-500">{text}</p>;
+  return <SupportingText className="rounded-lg border border-white/10 bg-white/[0.035] p-4 text-zinc-500">{text}</SupportingText>;
 }
 
 function MobileNavGlyph({ icon }: { icon: MobileNavIcon }) {
@@ -1081,7 +1092,7 @@ export default function MemberPortalContent() {
         <MemberHomeHeader name={firstName} onProfile={() => changeMemberSection("Profile")} />
 
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold leading-6 text-white">Today</h2>
+          <SectionTitle>Today</SectionTitle>
           <TodayProgressCard completedGoals={completedGoals} totalGoals={totalGoals} />
           <div className="grid gap-3 md:grid-cols-2">
             <StatusMetric
@@ -1125,10 +1136,10 @@ export default function MemberPortalContent() {
     return (
       <div className="space-y-3 pb-16 md:space-y-6 md:pb-0">
         <div className="rounded-lg border border-white/10 bg-[#111713] px-3.5 py-2.5 md:hidden">
-          <p className="text-sm font-semibold leading-5 text-white">
+          <BodyText className="text-sm font-semibold leading-5">
             {workoutSession.exercises.length} exercises &bull; {currentTotalSets} sets &bull; {currentTotalVolume} kg volume
-          </p>
-          <p className="mt-0.5 text-xs font-medium text-zinc-500">{currentCompletedSets} completed sets</p>
+          </BodyText>
+          <Caption className="mt-0.5 font-medium">{currentCompletedSets} completed sets</Caption>
         </div>
         <div className="hidden grid-cols-2 gap-3 sm:grid-cols-4 md:grid">
           <MiniMetric label="Exercises" value={String(workoutSession.exercises.length)} />
@@ -1171,8 +1182,8 @@ export default function MemberPortalContent() {
             <Card key={exercise.id} className="relative">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="pr-11 md:pr-0">
-                  <h3 className="text-base font-semibold leading-snug text-white md:text-[18px]">{exercise.name}</h3>
-                  <p className="mt-0.5 text-sm font-normal leading-5 text-zinc-400">{exercise.muscle} - {exercise.equipment}</p>
+                  <CardTitle className="md:text-[18px]">{exercise.name}</CardTitle>
+                  <SupportingText className="mt-0.5">{exercise.muscle} - {exercise.equipment}</SupportingText>
                 </div>
                 <div className="hidden flex-wrap gap-2 md:flex">
                   <ActionButton onClick={() => duplicateWorkoutExercise(exercise)}>Duplicate</ActionButton>
@@ -1211,10 +1222,10 @@ export default function MemberPortalContent() {
                 </div>
                 {exercise.sets.map((set, index) => (
                   <div key={set.id} className="grid grid-cols-[28px_minmax(52px,0.85fr)_minmax(0,1fr)_minmax(0,1fr)_32px] items-center gap-1 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_42px_42px] md:gap-2">
-                    <p className="text-sm font-semibold text-white">{index + 1}</p>
-                    <p className="truncate text-xs font-semibold text-zinc-500 md:hidden">
+                    <LabelText as="p" className="text-sm text-white">{index + 1}</LabelText>
+                    <Caption className="truncate font-semibold md:hidden">
                       {index > 0 ? `${exercise.sets[index - 1].weight || "-"}x${exercise.sets[index - 1].reps || "-"}` : "-"}
-                    </p>
+                    </Caption>
                     <input inputMode="decimal" value={set.weight} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { weight: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-center text-sm text-white outline-none focus:border-lime-300/60 md:text-left" />
                     <input inputMode="numeric" value={set.reps} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { reps: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-center text-sm text-white outline-none focus:border-lime-300/60 md:text-left" />
                     <input inputMode="decimal" value={set.rpe} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { rpe: event.target.value })} className="hidden h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-sm text-white outline-none focus:border-lime-300/60 md:block" />
@@ -1242,7 +1253,7 @@ export default function MemberPortalContent() {
         </div>
 
         <Card>
-          <h2 className="text-[18px] font-semibold leading-6 text-white">Workout History</h2>
+          <SectionTitle>Workout History</SectionTitle>
           <div className="mt-5 grid gap-3">
             {workoutsLoading ? <EmptyState text="Loading workout history..." /> : null}
             {!workoutsLoading && savedWorkouts.length ? savedWorkouts.map((session) => (
@@ -1253,8 +1264,8 @@ export default function MemberPortalContent() {
                     onClick={() => setSavedWorkouts((current) => current.map((item) => (String(item.id) === String(session.id) ? { ...item, expanded: !item.expanded } : item)))}
                     className="min-w-0 flex-1 text-left"
                   >
-                    <span className="block text-base font-semibold text-white">{session.name}</span>
-                    <span className="mt-1 block text-sm text-zinc-400">{session.date} - {session.exercises.length} exercises - {calculateTotalSets(session.exercises)} sets - {calculateTotalVolume(session.exercises)} kg</span>
+                    <CardTitle as="span" className="block">{session.name}</CardTitle>
+                    <SupportingText as="span" className="mt-1 block">{session.date} - {session.exercises.length} exercises - {calculateTotalSets(session.exercises)} sets - {calculateTotalVolume(session.exercises)} kg</SupportingText>
                   </button>
                   <div className="flex shrink-0 items-center gap-2">
                     <button
@@ -1278,8 +1289,8 @@ export default function MemberPortalContent() {
                   <div className="mt-4 grid gap-3 border-t border-white/10 pt-4">
                     {session.exercises.map((exercise) => (
                       <div key={exercise.id} className="rounded-lg bg-black/20 p-3">
-                        <p className="text-[15px] font-semibold leading-5 text-white">{exercise.name}</p>
-                        <p className="mt-1 text-sm text-zinc-400">{exercise.sets.length} sets - {calculateTotalVolume([exercise])} kg volume</p>
+                        <CardTitle as="p" className="text-[15px]">{exercise.name}</CardTitle>
+                        <SupportingText className="mt-1">{exercise.sets.length} sets - {calculateTotalVolume([exercise])} kg volume</SupportingText>
                       </div>
                     ))}
                   </div>
@@ -1295,7 +1306,7 @@ export default function MemberPortalContent() {
             <section className="flex h-full w-full flex-col bg-[#101511] md:h-[86vh] md:max-w-2xl md:overflow-hidden md:rounded-lg md:border md:border-white/10 md:shadow-2xl md:shadow-black">
               <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#101511] px-4">
                 <button type="button" onClick={() => { setSelectedExerciseIds([]); setExerciseModalOpen(false); }} className="text-sm font-semibold text-zinc-300">Cancel</button>
-                <h2 className="text-base font-semibold text-white">Add Exercise</h2>
+                <CardTitle as="h2">Add Exercise</CardTitle>
                 <button type="button" onClick={addSelectedExercisesToSession} disabled={!selectedExerciseIds.length} className="text-sm font-semibold text-lime-300 disabled:cursor-not-allowed disabled:text-zinc-500">
                   {selectedExerciseIds.length ? `Add (${selectedExerciseIds.length})` : "Add"}
                 </button>
@@ -1330,8 +1341,8 @@ export default function MemberPortalContent() {
                       >
                         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#172018] text-xs font-semibold text-lime-300">{exercise.imagePlaceholder}</span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[15px] font-semibold leading-5 text-white">{exercise.name}</span>
-                          <span className="mt-0.5 block truncate text-sm font-normal text-zinc-400">{exercise.muscle} - {exercise.equipment}</span>
+                          <CardTitle as="span" className="block truncate text-[15px]">{exercise.name}</CardTitle>
+                          <SupportingText as="span" className="mt-0.5 block truncate">{exercise.muscle} - {exercise.equipment}</SupportingText>
                         </span>
                         <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border text-sm font-semibold ${selected ? "border-lime-400 bg-lime-400 text-[#07100b]" : "border-[#dfe5d8] bg-white text-[#172018]"}`}>{selected ? "OK" : "+"}</span>
                       </button>
@@ -1358,7 +1369,7 @@ export default function MemberPortalContent() {
         <div className="grid gap-3 md:gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
           <Card className="scroll-mt-20" >
             <div id="member-add-meal" />
-            <h2 className="text-[18px] font-semibold leading-6 text-white">{editingMealId ? "Edit Meal" : "Add Meal"}</h2>
+            <SectionTitle>{editingMealId ? "Edit Meal" : "Add Meal"}</SectionTitle>
             <div className="mt-4 grid gap-3 md:mt-5 md:gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Date"><input type="date" value={mealForm.date} onChange={(event) => setMealForm((current) => ({ ...current, date: event.target.value }))} className={inputClass()} /></Field>
@@ -1376,15 +1387,15 @@ export default function MemberPortalContent() {
             </div>
           </Card>
           <Card>
-            <h2 className="text-[18px] font-semibold leading-6 text-white">Meal History</h2>
+            <SectionTitle>Meal History</SectionTitle>
             <div className="mt-5 grid gap-3">
               {meals.length ? meals.map((entry) => (
                 <div key={entry.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-3 md:p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="text-[15px] font-semibold leading-5 text-white">{entry.food}</p>
-                      <p className="mt-1 text-sm text-zinc-400">{entry.date} {entry.time} - {entry.type} - {entry.quantity}</p>
-                      <p className="mt-1 text-sm font-medium text-lime-200">{entry.calories || 0} cal - {entry.protein || 0}g protein</p>
+                      <CardTitle as="p" className="text-[15px]">{entry.food}</CardTitle>
+                      <SupportingText className="mt-1">{entry.date} {entry.time} - {entry.type} - {entry.quantity}</SupportingText>
+                      <LabelText as="p" className="mt-1 text-sm text-lime-200">{entry.calories || 0} cal - {entry.protein || 0}g protein</LabelText>
                     </div>
                     <div className="flex gap-2">
                       <ActionButton onClick={() => editMeal(entry)}>Edit</ActionButton>
@@ -1415,7 +1426,7 @@ export default function MemberPortalContent() {
         <div className="grid gap-3 md:gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
           <Card className="scroll-mt-20">
             <div id="member-add-progress" />
-            <h2 className="text-[18px] font-semibold leading-6 text-white">{editingProgressId ? "Edit Progress" : "Add Progress"}</h2>
+            <SectionTitle>{editingProgressId ? "Edit Progress" : "Add Progress"}</SectionTitle>
             <div className="mt-4 grid gap-3 md:mt-5 md:gap-4">
               <Field label="Date"><input type="date" value={progressForm.date} onChange={(event) => setProgressForm((current) => ({ ...current, date: event.target.value }))} className={inputClass()} /></Field>
               <div className="grid grid-cols-2 gap-3">
@@ -1430,14 +1441,14 @@ export default function MemberPortalContent() {
             </div>
           </Card>
           <Card>
-            <h2 className="text-[18px] font-semibold leading-6 text-white">Progress History</h2>
+            <SectionTitle>Progress History</SectionTitle>
             <div className="mt-5 grid gap-3">
               {progressEntries.map((entry) => (
                 <div key={entry.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-3 md:p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="text-[15px] font-semibold leading-5 text-white">{entry.date}</p>
-                      <p className="mt-1 text-sm text-zinc-400">{entry.weight} kg - {entry.bodyFat}% body fat - Waist {entry.waist}</p>
+                      <CardTitle as="p" className="text-[15px]">{entry.date}</CardTitle>
+                      <SupportingText className="mt-1">{entry.weight} kg - {entry.bodyFat}% body fat - Waist {entry.waist}</SupportingText>
                     </div>
                     <div className="flex gap-2">
                       <ActionButton onClick={() => editProgress(entry)}>Edit</ActionButton>
@@ -1460,7 +1471,7 @@ export default function MemberPortalContent() {
         <div className="grid gap-3 md:gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
           <Card className="scroll-mt-20">
             <div id="member-upload-photo" />
-            <h2 className="text-[18px] font-semibold leading-6 text-white">Upload Progress Photo</h2>
+            <SectionTitle>Upload Progress Photo</SectionTitle>
             <div className="mt-4 grid gap-3 md:mt-5 md:gap-4">
               <Field label="Photo Type"><select value={photoType} onChange={(event) => setPhotoType(event.target.value as PhotoType)} className={inputClass()}>{photoTypes.map((type) => <option key={type}>{type}</option>)}</select></Field>
               <Field label="Date"><input type="date" value={photoDate} onChange={(event) => setPhotoDate(event.target.value)} className={inputClass()} /></Field>
@@ -1472,15 +1483,15 @@ export default function MemberPortalContent() {
           <div className="grid gap-4">
             {photoTypes.map((type) => (
               <Card key={type}>
-                <h3 className="text-base font-semibold leading-6 text-white">{type} Photos</h3>
+                <CardTitle>{type} Photos</CardTitle>
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {photos.filter((photo) => photo.type === type).length ? photos.filter((photo) => photo.type === type).map((photo) => (
                     <article key={photo.id} className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.035]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={photo.url} alt={`${photo.type} progress`} className="aspect-[4/3] w-full object-cover" />
                       <div className="p-3">
-                        <p className="text-sm font-semibold text-white">{photo.date}</p>
-                        <p className="mt-1 text-sm text-zinc-400">{photo.notes || photo.fileName}</p>
+                        <LabelText as="p" className="text-white">{photo.date}</LabelText>
+                        <SupportingText className="mt-1">{photo.notes || photo.fileName}</SupportingText>
                         <button type="button" onClick={() => deletePhoto(photo)} className="mt-3 rounded-md border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-semibold text-red-200">Delete</button>
                       </div>
                     </article>
@@ -1498,7 +1509,7 @@ export default function MemberPortalContent() {
     return (
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
-          <h2 className="text-[18px] font-semibold leading-6 text-white">Membership</h2>
+          <SectionTitle>Membership</SectionTitle>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {[
               ["Plan Name", "Not available"],
@@ -1510,15 +1521,15 @@ export default function MemberPortalContent() {
               ["Branch", "Not available"],
             ].map(([label, value]) => (
               <div key={label} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-zinc-500">{label}</p>
-                <p className="mt-2 text-[15px] font-semibold leading-5 text-white">{value}</p>
+                <Caption className="font-medium uppercase tracking-[0.08em]">{label}</Caption>
+                <CardTitle as="p" className="mt-2 text-[15px]">{value}</CardTitle>
               </div>
             ))}
           </div>
           <button type="button" className="mt-5 h-11 rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b]">Renew Membership</button>
         </Card>
         <Card>
-          <h2 className="text-[18px] font-semibold leading-6 text-white">Timeline</h2>
+          <SectionTitle>Timeline</SectionTitle>
           <div className="mt-5 space-y-4">
             <EmptyState text="No membership timeline available yet." />
           </div>
@@ -1530,7 +1541,7 @@ export default function MemberPortalContent() {
   function renderProfile() {
     return (
       <Card className="max-w-3xl">
-        <h2 className="text-[18px] font-semibold leading-6 text-white">Profile</h2>
+        <SectionTitle>Profile</SectionTitle>
         {profileLoading ? <p className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2 text-sm font-semibold text-zinc-400">Loading profile...</p> : null}
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="Full Name"><input value={profile.fullName} onChange={(event) => setProfile((current) => ({ ...current, fullName: event.target.value }))} className={inputClass()} /></Field>
@@ -1566,28 +1577,28 @@ export default function MemberPortalContent() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-6">
           <Card>
-            <h2 className="text-[18px] font-semibold leading-6 text-white">Contact</h2>
+            <SectionTitle>Contact</SectionTitle>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-[15px] font-semibold leading-5 text-white">Trainer not assigned</p>
-                <p className="mt-1 text-sm text-zinc-400">Assigned Trainer</p>
-                <p className="mt-3 text-sm font-medium text-lime-200">Contact not available</p>
+                <CardTitle as="p" className="text-[15px]">Trainer not assigned</CardTitle>
+                <SupportingText className="mt-1">Assigned Trainer</SupportingText>
+                <LabelText as="p" className="mt-3 text-sm text-lime-200">Contact not available</LabelText>
               </div>
               <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-[15px] font-semibold leading-5 text-white">Gym contact unavailable</p>
-                <p className="mt-1 text-sm text-zinc-400">Gym Contact</p>
-                <p className="mt-3 text-sm font-medium text-lime-200">Not available</p>
+                <CardTitle as="p" className="text-[15px]">Gym contact unavailable</CardTitle>
+                <SupportingText className="mt-1">Gym Contact</SupportingText>
+                <LabelText as="p" className="mt-3 text-sm text-lime-200">Not available</LabelText>
               </div>
             </div>
           </Card>
           <Card>
-            <h2 className="text-[18px] font-semibold leading-6 text-white">Message</h2>
+            <SectionTitle>Message</SectionTitle>
             <textarea value={supportMessage} onChange={(event) => setSupportMessage(event.target.value)} placeholder="Write your message..." className={`mt-5 ${areaClass()}`} />
             <button type="button" className="mt-4 h-11 rounded-lg bg-lime-400 px-5 text-sm font-semibold text-[#07100b]">Submit</button>
           </Card>
         </div>
         <Card>
-          <h2 className="text-[18px] font-semibold leading-6 text-white">FAQ</h2>
+          <SectionTitle>FAQ</SectionTitle>
           <div className="mt-5 grid gap-3">
             {faqs.map(([question, answer], index) => (
               <div key={question} className="rounded-lg border border-white/10 bg-white/[0.035]">
