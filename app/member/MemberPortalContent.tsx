@@ -324,7 +324,7 @@ function MemberHomeHeader({ name, onProfile }: { name: string; onProfile: () => 
     <header className="flex items-center justify-between gap-4 pt-1">
       <div className="min-w-0">
         <PageTitle className="truncate text-[26px] md:text-3xl">Hello, {name}</PageTitle>
-        <PageSubtitle className="mt-1">Ready to make today count?</PageSubtitle>
+        <PageSubtitle className="mt-1.5">Ready to make today count?</PageSubtitle>
       </div>
       <button
         type="button"
@@ -342,7 +342,7 @@ function TodayProgressCard({ completedGoals, totalGoals }: { completedGoals: num
   const progress = totalGoals ? Math.round((completedGoals / totalGoals) * 100) : 0;
 
   return (
-    <section className="rounded-xl border border-[#e2e7dc] bg-white p-4 shadow-[0_10px_24px_rgba(23,32,24,0.06)]">
+    <section className="rounded-xl border border-[#e2e7dc] bg-white px-4 py-3.5 shadow-[0_10px_24px_rgba(23,32,24,0.06)]">
       <div className="flex items-start justify-between gap-4">
         <div>
           <SupportingText>Today&apos;s Progress</SupportingText>
@@ -352,8 +352,8 @@ function TodayProgressCard({ completedGoals, totalGoals }: { completedGoals: num
           {completedGoals} of {totalGoals} goals completed
         </p>
       </div>
-      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-[#eef1eb]">
-        <div className="h-full rounded-full bg-lime-400 transition-all" style={{ width: `${progress}%` }} />
+      <div className="mt-3.5 h-2.5 overflow-hidden rounded-full bg-[#eef1eb]" aria-label={`Today progress ${progress}%`}>
+        <div className="h-full rounded-full bg-lime-400 transition-all duration-300" style={{ width: `${progress}%` }} />
       </div>
     </section>
   );
@@ -377,7 +377,7 @@ function StatusMetric({
   onAction?: () => void;
 }) {
   return (
-    <section className="rounded-xl border border-[#e2e7dc] bg-white p-4 shadow-[0_10px_24px_rgba(23,32,24,0.05)]">
+    <section className="rounded-xl border border-[#e2e7dc] bg-white px-4 py-3.5 shadow-[0_10px_24px_rgba(23,32,24,0.05)]">
       <div className="flex items-center gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f1f3ef] text-[#172018]">
           <MobileNavGlyph icon={icon} />
@@ -396,10 +396,10 @@ function StatusMetric({
           </button>
         ) : null}
       </div>
-      {detail ? <SupportingText className="mt-3">{detail}</SupportingText> : null}
+      {detail ? <SupportingText className="mt-2.5">{detail}</SupportingText> : null}
       {typeof progress === "number" ? (
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eef1eb]">
-          <div className="h-full rounded-full bg-lime-400" style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }} />
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eef1eb]" aria-label={`${title} progress ${Math.max(0, Math.min(progress, 100))}%`}>
+          <div className="h-full rounded-full bg-lime-400 transition-all duration-300" style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }} />
         </div>
       ) : null}
     </section>
@@ -415,13 +415,13 @@ type PortalActivityItem = {
 
 function EmptyActivityState({ onWorkout, onMeal }: { onWorkout: () => void; onMeal: () => void }) {
   return (
-    <section className="rounded-xl border border-[#e2e7dc] bg-white p-4 text-center shadow-[0_10px_24px_rgba(23,32,24,0.05)]">
-      <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-[#f1f3ef] text-zinc-500">
+    <section className="rounded-xl border border-[#e2e7dc] bg-white px-4 py-3.5 text-center shadow-[0_10px_24px_rgba(23,32,24,0.05)]">
+      <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-[#f1f3ef] text-zinc-500">
         <MobileNavGlyph icon="trending" />
       </div>
       <CardTitle as="p" className="mt-3 text-[15px] text-[#172018]">Your fitness journey starts here.</CardTitle>
-      <SupportingText className="mx-auto mt-1 max-w-64">Log your first workout or meal to see activity.</SupportingText>
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <SupportingText className="mx-auto mt-1 max-w-64">Start small today. Your first log will appear here.</SupportingText>
+      <div className="mt-3.5 grid grid-cols-2 gap-2">
         <button type="button" onClick={onWorkout} className="min-h-11 rounded-full bg-lime-400 px-4 text-sm font-semibold text-[#07100b]">Workout</button>
         <button type="button" onClick={onMeal} className="min-h-11 rounded-full border border-[#dfe5d8] bg-white px-4 text-sm font-semibold text-[#172018]">Meal</button>
       </div>
@@ -444,8 +444,8 @@ function RecentActivity({
       {items.length ? (
         <div className="grid gap-2">
           {items.map((item) => (
-            <article key={`${item.action}-${item.time}-${item.id}`} className="flex items-center gap-3 rounded-xl border border-[#e2e7dc] bg-white p-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#f1f3ef] text-zinc-500">
+            <article key={`${item.action}-${item.time}-${item.id}`} className="flex items-center gap-3 rounded-xl border border-[#e2e7dc] bg-white px-4 py-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f1f3ef] text-zinc-500">
                 <MobileNavGlyph icon={item.action.includes("Meal") ? "utensils" : item.action.includes("Workout") ? "dumbbell" : "trending"} />
               </span>
               <div className="min-w-0 flex-1">
@@ -561,7 +561,11 @@ function profileFromRow(row: MemberProfile): ProfileForm {
 }
 
 function firstNameFromProfile(profile: ProfileForm) {
-  return profile.fullName.trim().split(/\s+/)[0] || "Member";
+  const firstName = profile.fullName.trim().split(/\s+/)[0] || "Member";
+
+  return firstName
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function isMemberSection(value: string | null): value is MemberSection {
