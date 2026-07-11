@@ -110,11 +110,13 @@ const memberNavigation: MemberSection[] = [
   "Support",
 ];
 
-const mobilePrimaryNavigation: Array<{ label: string; section: MemberSection; icon: string }> = [
-  { label: "Home", section: "Dashboard", icon: "H" },
-  { label: "Workout", section: "Add Workout", icon: "W" },
-  { label: "Meal", section: "Meal Log", icon: "M" },
-  { label: "Progress", section: "Progress", icon: "P" },
+type MobileNavIcon = "home" | "dumbbell" | "utensils" | "trending" | "menu";
+
+const mobilePrimaryNavigation: Array<{ label: string; section: MemberSection; icon: MobileNavIcon }> = [
+  { label: "Home", section: "Dashboard", icon: "home" },
+  { label: "Workout", section: "Add Workout", icon: "dumbbell" },
+  { label: "Meal", section: "Meal Log", icon: "utensils" },
+  { label: "Progress", section: "Progress", icon: "trending" },
 ];
 
 const mobileMoreNavigation: Array<{ label: string; section: MemberSection }> = [
@@ -322,6 +324,71 @@ function ActionButton({ children, onClick, tone = "default" }: { children: React
 
 function EmptyState({ text }: { text: string }) {
   return <p className="rounded-lg border border-white/10 bg-white/[0.035] p-4 text-sm font-semibold text-zinc-500">{text}</p>;
+}
+
+function MobileNavGlyph({ icon }: { icon: MobileNavIcon }) {
+  const common = {
+    className: "h-5 w-5",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  if (icon === "home") {
+    return (
+      <svg {...common}>
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 10v10h14V10" />
+        <path d="M9.5 20v-6h5v6" />
+      </svg>
+    );
+  }
+
+  if (icon === "dumbbell") {
+    return (
+      <svg {...common}>
+        <path d="M6 7v10" />
+        <path d="M18 7v10" />
+        <path d="M3 9v6" />
+        <path d="M21 9v6" />
+        <path d="M6 12h12" />
+      </svg>
+    );
+  }
+
+  if (icon === "utensils") {
+    return (
+      <svg {...common}>
+        <path d="M7 3v8" />
+        <path d="M5 3v4" />
+        <path d="M9 3v4" />
+        <path d="M7 11v10" />
+        <path d="M17 3v18" />
+        <path d="M14 3h3a3 3 0 0 1 3 3v5h-3" />
+      </svg>
+    );
+  }
+
+  if (icon === "trending") {
+    return (
+      <svg {...common}>
+        <path d="M4 17 9 12l4 4 7-8" />
+        <path d="M15 8h5v5" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="M5 7h14" />
+      <path d="M5 12h14" />
+      <path d="M5 17h14" />
+    </svg>
+  );
 }
 
 function profileFromRow(row: MemberProfile): ProfileForm {
@@ -896,11 +963,11 @@ export default function MemberPortalContent() {
 
     return (
       <div className="space-y-3 pb-16 md:space-y-6 md:pb-0">
-        <div className="rounded-lg border border-white/10 bg-[#111713] px-4 py-3 md:hidden">
+        <div className="rounded-lg border border-white/10 bg-[#111713] px-3.5 py-2.5 md:hidden">
           <p className="text-sm font-black text-white">
             {workoutSession.exercises.length} exercises &bull; {currentTotalSets} sets &bull; {currentTotalVolume} kg volume
           </p>
-          <p className="mt-1 text-xs font-semibold text-zinc-500">{currentCompletedSets} completed sets</p>
+          <p className="mt-0.5 text-xs font-medium text-zinc-500">{currentCompletedSets} completed sets</p>
         </div>
         <div className="hidden grid-cols-2 gap-3 sm:grid-cols-4 md:grid">
           <MiniMetric label="Exercises" value={String(workoutSession.exercises.length)} />
@@ -943,8 +1010,8 @@ export default function MemberPortalContent() {
             <Card key={exercise.id} className="relative">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="pr-11 md:pr-0">
-                  <h3 className="text-lg font-black text-white md:text-xl">{exercise.name}</h3>
-                  <p className="mt-1 text-sm font-semibold text-zinc-400">{exercise.muscle} - {exercise.equipment}</p>
+                  <h3 className="text-base font-semibold leading-snug text-white md:text-xl md:font-black">{exercise.name}</h3>
+                  <p className="mt-0.5 text-sm font-normal leading-5 text-zinc-400">{exercise.muscle} - {exercise.equipment}</p>
                 </div>
                 <div className="hidden flex-wrap gap-2 md:flex">
                   <ActionButton onClick={() => duplicateWorkoutExercise(exercise)}>Duplicate</ActionButton>
@@ -990,12 +1057,15 @@ export default function MemberPortalContent() {
                     <input inputMode="decimal" value={set.weight} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { weight: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-center text-sm text-white outline-none focus:border-lime-300/60 md:text-left" />
                     <input inputMode="numeric" value={set.reps} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { reps: event.target.value })} className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-center text-sm text-white outline-none focus:border-lime-300/60 md:text-left" />
                     <input inputMode="decimal" value={set.rpe} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { rpe: event.target.value })} className="hidden h-10 min-w-0 rounded-lg border border-white/10 bg-black/25 px-2 text-sm text-white outline-none focus:border-lime-300/60 md:block" />
-                    <input type="checkbox" checked={set.completed} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { completed: event.target.checked })} className="h-5 w-5 justify-self-center accent-lime-400" />
+                    <label className="grid h-10 w-10 place-items-center justify-self-center rounded-lg border border-lime-300/20 bg-white text-[#172018] md:h-auto md:w-auto md:border-0 md:bg-transparent">
+                      <span className="sr-only">Mark set {index + 1} complete</span>
+                      <input type="checkbox" checked={set.completed} onChange={(event) => updateWorkoutSet(exercise.id, set.id, { completed: event.target.checked })} className="h-5 w-5 accent-lime-400" />
+                    </label>
                     <button type="button" onClick={() => removeSetFromExercise(exercise.id, set.id)} className="hidden h-9 rounded-lg border border-red-300/20 bg-red-300/10 text-xs font-black text-red-200 md:block">-</button>
                   </div>
                 ))}
               </div>
-              <button type="button" onClick={() => addSetToExercise(exercise.id)} className="mt-4 h-10 rounded-lg border border-lime-300/20 bg-lime-300/10 px-4 text-sm font-black text-lime-100">Add Set</button>
+              <button type="button" onClick={() => addSetToExercise(exercise.id)} className="mt-3 h-11 rounded-lg border border-lime-500/30 bg-lime-400/20 px-4 text-sm font-semibold text-[#172018] md:mt-4 md:h-10 md:font-black md:text-lime-100">Add Set</button>
             </Card>
           )) : <EmptyState text="No exercises selected yet. Add exercises to build your workout." />}
         </div>
@@ -1069,10 +1139,10 @@ export default function MemberPortalContent() {
                   {selectedExerciseIds.length ? `Add (${selectedExerciseIds.length})` : "Add"}
                 </button>
               </header>
-              <div className="shrink-0 space-y-3 border-b border-white/10 p-4">
+              <div className="shrink-0 space-y-2.5 border-b border-white/10 p-3.5">
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">Search</span>
-                  <input value={exerciseSearch} onChange={(event) => setExerciseSearch(event.target.value)} placeholder="Exercise name" className={`${inputClass()} pl-16 pr-10`} />
+                  <input value={exerciseSearch} onChange={(event) => setExerciseSearch(event.target.value)} placeholder="Exercise name" className={`${inputClass()} h-10 pl-16 pr-10`} />
                   {exerciseSearch ? (
                     <button type="button" onClick={() => setExerciseSearch("")} className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-md text-sm font-black text-zinc-500">
                       x
@@ -1080,11 +1150,11 @@ export default function MemberPortalContent() {
                   ) : null}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <select value={equipmentFilter} onChange={(event) => setEquipmentFilter(event.target.value)} className={inputClass()}>{equipmentFilters.map((filter) => <option key={filter}>{filter}</option>)}</select>
-                  <select value={muscleFilter} onChange={(event) => setMuscleFilter(event.target.value)} className={inputClass()}>{muscleFilters.map((filter) => <option key={filter}>{filter}</option>)}</select>
+                  <select value={equipmentFilter} onChange={(event) => setEquipmentFilter(event.target.value)} className="h-9 w-full rounded-full border border-[#dfe5d8] bg-[#f1f3ef] px-3 text-xs font-semibold text-[#172018] outline-none focus:border-lime-400">{equipmentFilters.map((filter) => <option key={filter}>{filter}</option>)}</select>
+                  <select value={muscleFilter} onChange={(event) => setMuscleFilter(event.target.value)} className="h-9 w-full rounded-full border border-[#dfe5d8] bg-[#f1f3ef] px-3 text-xs font-semibold text-[#172018] outline-none focus:border-lime-400">{muscleFilters.map((filter) => <option key={filter}>{filter}</option>)}</select>
                 </div>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto p-3">
+              <div className="min-h-0 flex-1 overflow-y-auto p-2.5">
                 <div className="grid gap-2">
                   {filteredExercises.map((exercise) => {
                     const selected = selectedExerciseIds.includes(exercise.id);
@@ -1093,16 +1163,16 @@ export default function MemberPortalContent() {
                         key={exercise.id}
                         type="button"
                         onClick={() => toggleExerciseSelection(exercise.id)}
-                        className={`flex items-center gap-3 rounded-lg border p-3 text-left transition ${
+                        className={`flex items-center gap-3 rounded-lg border p-2.5 text-left transition ${
                           selected ? "border-lime-300/50 bg-lime-300/10" : "border-white/10 bg-white/[0.035] hover:border-lime-300/30"
                         }`}
                       >
-                        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-lime-300/12 text-xs font-black text-lime-200">{exercise.imagePlaceholder}</span>
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#172018] text-xs font-black text-lime-300">{exercise.imagePlaceholder}</span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate font-black text-white">{exercise.name}</span>
-                          <span className="mt-1 block text-sm text-zinc-400">{exercise.muscle} - {exercise.equipment}</span>
+                          <span className="block truncate text-[15px] font-semibold leading-5 text-white">{exercise.name}</span>
+                          <span className="mt-0.5 block truncate text-sm font-normal text-zinc-400">{exercise.muscle} - {exercise.equipment}</span>
                         </span>
-                        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border text-xs font-black ${selected ? "border-lime-300 bg-lime-400 text-[#07100b]" : "border-white/10 text-zinc-400"}`}>{selected ? "OK" : "+"}</span>
+                        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border text-sm font-black ${selected ? "border-lime-400 bg-lime-400 text-[#07100b]" : "border-[#dfe5d8] bg-white text-[#172018]"}`}>{selected ? "OK" : "+"}</span>
                       </button>
                     );
                   })}
@@ -1411,6 +1481,7 @@ export default function MemberPortalContent() {
           .member-mobile-theme {
             background: #f6f7f4;
             color: #172018;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           }
 
           .member-mobile-theme section[class*="bg-[#111713]"],
@@ -1520,7 +1591,7 @@ export default function MemberPortalContent() {
                 onClick={() => changeMemberSection(item.section)}
                 className={`grid min-w-0 place-items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-black transition ${active ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
               >
-                <span className="grid h-5 w-5 place-items-center rounded-md border border-current text-[10px]">{item.icon}</span>
+                <MobileNavGlyph icon={item.icon} />
                 <span className="truncate">{item.label}</span>
               </button>
             );
@@ -1530,7 +1601,7 @@ export default function MemberPortalContent() {
             onClick={() => setMobileMoreOpen((current) => !current)}
             className={`grid min-w-0 place-items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-black transition ${mobileMoreNavigation.some((item) => item.section === activeSection) ? "bg-lime-400 text-[#07100b]" : "text-zinc-400"}`}
           >
-            <span className="grid h-5 w-5 place-items-center rounded-md border border-current text-[10px]">+</span>
+            <MobileNavGlyph icon="menu" />
             <span>More</span>
           </button>
         </div>
